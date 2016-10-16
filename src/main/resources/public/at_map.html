@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>AT Map</title>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<script src="http://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+<script>
+function initMap() {
+  var map = new google.maps.Map(document.getElementById('map'), {
+    zoom: 6,
+    center: {lat: 40.265464, lng: -76.5604455},
+    mapTypeId: google.maps.MapTypeId.TERRAIN
+  });
+
+  $.getJSON('http://localhost:5000/currentTrail', function(points) {
+    var trail = new google.maps.Polyline({
+      path: points,
+      geodesic: true,
+      strokeColor: '#FF0000',
+      strokeOpacity: 1.0,
+      strokeWeight: 2
+    });
+
+  trail.setMap(map);
+  })
+
+
+}
+
+    </script>
+<script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=${env.MAPS_JAVASCRIPT_API_KEY}&callback=initMap"></script>
+</body>
+</html>

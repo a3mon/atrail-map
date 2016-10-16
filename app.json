@@ -1,0 +1,6 @@
+{
+  "name": "atrail-map",
+  "description": "Micro service for tracking progress on the AT.",
+  "image": "heroku/java",
+  "addons": [ "heroku-postgresql" ]
+}
