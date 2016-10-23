@@ -20,28 +20,35 @@
 <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
 <script>
 function initMap() {
-  var map = new google.maps.Map(document.getElementById('map'), {
-    zoom: 6,
-    center: {lat: 40.265464, lng: -76.5604455},
-    mapTypeId: google.maps.MapTypeId.TERRAIN
-  });
 
   $.getJSON('${env.HEROKU_URL}/currentTrail', function(points) {
+    var map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 7,
+        center: points[points.length - 1],
+        mapTypeId: google.maps.MapTypeId.TERRAIN
+    });
+    new google.maps.Marker({
+        position: {lat:34.626688, lng:-84.193892},
+        title: 'Springer Mountain',
+        map: map
+    });
+    new google.maps.Marker({
+        position: {lat:45.90424, lng:-68.921152},
+        title: 'Mount Katahdin',
+        map: map
+    });
     var trail = new google.maps.Polyline({
-      path: points,
-      geodesic: true,
-      strokeColor: '#FF0000',
-      strokeOpacity: 1.0,
-      strokeWeight: 2
+        path: points,
+        geodesic: true,
+        strokeColor: '#FF0000',
+        strokeOpacity: 1.0,
+        strokeWeight: 2,
+        map: map
     });
 
-  trail.setMap(map);
   })
-
-
 }
-
-    </script>
+</script>
 <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=${env.MAPS_JAVASCRIPT_API_KEY}&callback=initMap"></script>
 </body>
