@@ -34,8 +34,8 @@ public class ATService extends AbstractService {
                 "order by id asc"
         )
         .map(r -> {
-            PGpoint pGpoint = r.get(AT_TRAIL.POINT, PGpoint.class);
-            return ImmutableMap.of("lat", pGpoint.x, "lng", pGpoint.y);
+            PGpoint point = r.get(AT_TRAIL.POINT, PGpoint.class);
+            return ImmutableMap.of("lat", point.x, "lng", point.y);
         });
     }
 }

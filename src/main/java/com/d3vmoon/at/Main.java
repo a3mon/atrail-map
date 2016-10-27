@@ -1,6 +1,7 @@
 package com.d3vmoon.at;
 
 import com.d3vmoon.at.service.ATService;
+import com.d3vmoon.at.service.ShelterService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -20,6 +21,8 @@ public class Main {
         staticFileLocation("/public");
 
         get("/currentTrail", new ATService()::getCurrentTrail, gson::toJson);
+
+        get("/shelters", new ShelterService()::getShelters, gson::toJson);
 
         get("/", (req, res) -> "Hello Worldd");
     }
