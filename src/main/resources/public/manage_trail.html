@@ -2,9 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>$Title$</title>
+    <title>Manage Trail</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script   src="https://code.jquery.com/jquery-3.1.1.min.js"   integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="   crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 </head>
 <body>
-$END$
+    <div class="container">
+        <h1>Manage your Progress</h1>
+
+        <p>Choose the shelter you last passed</p>
+
+        <div class="dropdown">
+            <button class="btn btn-default dropdown-toggle" type="button" id="shelter-menu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                Choose a Shelter
+                <span class="caret"></span>
+            </button>
+            <ul id="shelter-list" class="dropdown-menu" aria-labelledby="shelterMenu" />
+        </div>
+
+        <h2>Embed your Map</h2>
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-6 col-sm-6">
+                        <iframe id="atrail-map"
+                                name="Appalachian Trail Map"
+                                title="Appalachian Trail Map"
+                                width="300"
+                                height="300"
+                                frameborder="0"
+                                scrolling="no"
+                                marginheight="0"
+                                marginwidth="0"
+                                src="${env.HEROKU_URL}/at_map.html">
+                        </iframe>
+                    </div>
+                    <div class="col-md-6 col-sm-6">
+                        <p>Copy the following code into your site to embed the left map.</p>
+                        <p>
+                            <button type="button" class="btn btn-default">
+                                <span class="glyphicon glyphicon-copy" aria-hidden="true"></span> Copy to Clipboard
+                            </button>
+                        </p>
+                        <textarea style="width:300px; height:100px; "><iframe id="atrail-map"
+name="Appalachian Trail Map"
+title="Appalachian Trail Map"
+width="300"
+height="300"
+frameborder="0"
+scrolling="no"
+marginheight="0"
+marginwidth="0"
+src="${env.HEROKU_URL}/at_map.html">
+</iframe></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+(function() {
+    'use strict';
+
+    $.getJSON('${env.HEROKU_URL}/shelters', function(shelters) {
+        var list = $('#shelter-list');
+        $.each(shelters, function(i, shelter) {
+            list.append($('<li><a href="#">' + shelter.name + '</a></li>'));
+        });
+
+    });
+})();
+    </script>
 </body>
 </html>
