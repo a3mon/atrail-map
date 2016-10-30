@@ -42,11 +42,11 @@
                     <div class="col-md-6 col-sm-6">
                         <p>Copy the following code into your site to embed the left map.</p>
                         <p>
-                            <button type="button" class="btn btn-default">
+                            <button id="copy-button" type="button" class="btn btn-default">
                                 <span class="glyphicon glyphicon-copy" aria-hidden="true"></span> Copy to Clipboard
                             </button>
                         </p>
-                        <textarea style="width:300px; height:100px; "><iframe id="atrail-map"
+                        <textarea id="map-source" style="width:300px; height:100px; "><iframe id="atrail-map"
 name="Appalachian Trail Map"
 title="Appalachian Trail Map"
 width="300"
@@ -67,6 +67,8 @@ src="${env.HEROKU_URL}/at_map.html">
     'use strict';
 
     var menu = $('#shelter-menu');
+    var copy = $('#copy-button');
+    var mapSource = $('#map-source');
 
     function reloadMap() {
         $( '#atrail-map' ).attr( 'src', function ( i, val ) { return val; });
@@ -80,6 +82,12 @@ src="${env.HEROKU_URL}/at_map.html">
             }),
             reloadMap
         );
+    });
+
+    copy.click(function(event) {
+        mapSource.focus();
+        mapSource.select();
+        document.execCommand("copy");
     });
 
     function getShelters() {
