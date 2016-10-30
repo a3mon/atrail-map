@@ -76,7 +76,7 @@ src="${env.HEROKU_URL}/at_map.html">
 
     menu.change(function(event) {
         $.post(
-            '${env.HEROKU_URL}/shelters/last',
+            '${env.HEROKU_URL}/api/v1/shelters/last',
             JSON.stringify({
                 id: $(event.target).val()
             }),
@@ -91,7 +91,7 @@ src="${env.HEROKU_URL}/at_map.html">
     });
 
     function getShelters() {
-        return $.getJSON('${env.HEROKU_URL}/shelters', function(shelters) {
+        return $.getJSON('${env.HEROKU_URL}/api/v1/shelters/', function(shelters) {
             $.each(shelters, function(i, shelter) {
                 menu.append($('<option value="' + shelter.id + '">' + shelter.name + '</option>'));
             });
@@ -99,7 +99,7 @@ src="${env.HEROKU_URL}/at_map.html">
     }
 
     function getCurrentShelter() {
-        return $.getJSON('${env.HEROKU_URL}/shelters/last', function(currentShelter) {
+        return $.getJSON('${env.HEROKU_URL}/api/v1/shelters/last', function(currentShelter) {
             menu.val(currentShelter.id);
         });
     }

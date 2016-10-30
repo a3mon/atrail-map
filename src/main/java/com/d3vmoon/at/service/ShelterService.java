@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import static com.d3vmoon.at.db.Tables.AT_LAST_SHELTER;
 import static com.d3vmoon.at.db.Tables.AT_SHELTER;
+import static com.d3vmoon.at.service.http.Path.PARAM_ID;
 
 public class ShelterService extends AbstractService {
 
@@ -35,7 +36,7 @@ public class ShelterService extends AbstractService {
     }
 
     public Shelter getShelter(Request req, Response resp) {
-        final String idParam = req.params(":id");
+        final String idParam = req.params(PARAM_ID);
         if ("last".equalsIgnoreCase(idParam)) {
             return ctx
                     .selectFrom(AT_SHELTER)
@@ -56,7 +57,7 @@ public class ShelterService extends AbstractService {
     public String setShelter(Request req, Response resp) {
         Shelter shelter = gson.fromJson(req.body(), Shelter.class);
 
-        final String idParam = req.params(":id");
+        final String idParam = req.params(PARAM_ID);
         if ("last".equalsIgnoreCase(idParam)) {
             ctx.update(AT_LAST_SHELTER)
                     .set(AT_LAST_SHELTER.AT_SHELTER, shelter.id)

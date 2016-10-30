@@ -21,7 +21,7 @@
 <script>
 function initMap() {
 
-  $.getJSON('${env.HEROKU_URL}/currentTrail', function(points) {
+  $.getJSON('${env.HEROKU_URL}/api/v1/currentTrail', function(points) {
     var map = new google.maps.Map(document.getElementById('map'), {
         zoom: 7,
         center: points[points.length - 1],

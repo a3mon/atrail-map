@@ -5,6 +5,9 @@ import com.d3vmoon.at.service.ShelterService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import static com.d3vmoon.at.service.http.Path.CURRENT_TRAIL;
+import static com.d3vmoon.at.service.http.Path.PARAM_ID;
+import static com.d3vmoon.at.service.http.Path.SHELTERS;
 import static spark.Spark.*;
 
 public class Main {
@@ -22,11 +25,11 @@ public class Main {
         port(Integer.valueOf(System.getenv("PORT")));
         staticFileLocation("/public");
 
-        get("/currentTrail", new ATService()::getCurrentTrail, gson::toJson);
+        get(CURRENT_TRAIL, new ATService()::getCurrentTrail, gson::toJson);
 
-        get("/shelters", shelterService::getShelters, gson::toJson);
-        get("/shelters/:id", shelterService::getShelter, gson::toJson);
-        post("/shelters/:id", shelterService::setShelter);
+        get(SHELTERS, shelterService::getShelters, gson::toJson);
+        get(SHELTERS + PARAM_ID, shelterService::getShelter, gson::toJson);
+        post(SHELTERS + PARAM_ID, shelterService::setShelter);
 
         get("/", (req, res) -> "Hello Worldd");
     }
