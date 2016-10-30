@@ -20,13 +20,7 @@
 
         <p>Choose the shelter you last passed</p>
 
-        <div class="dropdown">
-            <button class="btn btn-default dropdown-toggle" type="button" id="shelter-menu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                Choose a Shelter
-                <span class="caret"></span>
-            </button>
-            <ul id="shelter-list" class="dropdown-menu scrollable-menu" aria-labelledby="shelterMenu" />
-        </div>
+        <select id="shelter-menu" name="shelter-menu" class="btn btn-default" ></select>
 
         <h2>Embed your Map</h2>
         <div class="panel panel-default">
@@ -72,13 +66,32 @@ src="${env.HEROKU_URL}/at_map.html">
 (function() {
     'use strict';
 
-    $.getJSON('${env.HEROKU_URL}/shelters', function(shelters) {
-        var list = $('#shelter-list');
-        $.each(shelters, function(i, shelter) {
-            list.append($('<li><a href="#">' + shelter.name + '</a></li>'));
-        });
+    var menu = $('#shelter-menu');
 
+    menu.change(function(event) {
+        $.post(
+            '${env.HEROKU_URL}/shelters/last',
+            JSON.stringify({
+                id: $(event.target).val()
+            })
+        );
     });
+
+    function getShelters() {
+        return $.getJSON('${env.HEROKU_URL}/shelters', function(shelters) {
+            $.each(shelters, function(i, shelter) {
+                menu.append($('<option value="' + shelter.id + '">' + shelter.name + '</option>'));
+            });
+        });
+    }
+
+    function getCurrentShelter() {
+        return $.getJSON('${env.HEROKU_URL}/shelters/last', function(currentShelter) {
+            menu.val(currentShelter.id);
+        });
+    }
+
+    getShelters().then(getCurrentShelter);
 })();
     </script>
 </body>

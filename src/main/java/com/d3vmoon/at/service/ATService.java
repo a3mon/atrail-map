@@ -12,7 +12,7 @@ import static com.d3vmoon.at.db.Tables.AT_TRAIL;
 public class ATService extends AbstractService {
 
     public List<Map<String, Double>> getCurrentTrail(Request req, Response resp) {
-        return ctx().fetch(
+        return ctx.fetch(
                 "  select point " +
                 "    from at_trail " +
                 "   where id <= ( " +

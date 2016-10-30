@@ -11,6 +11,8 @@ public class Main {
 
     public static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
+    private ShelterService shelterService = new ShelterService();
+
     public static void main(String[] args)  {
 
         new Main().init();
@@ -22,8 +24,11 @@ public class Main {
 
         get("/currentTrail", new ATService()::getCurrentTrail, gson::toJson);
 
-        get("/shelters", new ShelterService()::getShelters, gson::toJson);
+        get("/shelters", shelterService::getShelters, gson::toJson);
+        get("/shelters/:id", shelterService::getShelter, gson::toJson);
+        post("/shelters/:id", shelterService::setShelter);
 
         get("/", (req, res) -> "Hello Worldd");
     }
+
 }
