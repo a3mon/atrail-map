@@ -5,9 +5,7 @@ import com.d3vmoon.at.service.ShelterService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import static com.d3vmoon.at.service.http.Path.CURRENT_TRAIL;
-import static com.d3vmoon.at.service.http.Path.PARAM_ID;
-import static com.d3vmoon.at.service.http.Path.SHELTERS;
+import static com.d3vmoon.at.service.http.Path.*;
 import static spark.Spark.*;
 
 public class Main {
@@ -31,7 +29,8 @@ public class Main {
         get(SHELTERS + PARAM_ID, shelterService::getShelter, gson::toJson);
         post(SHELTERS + PARAM_ID, shelterService::setShelter);
 
-        get("/", (req, res) -> "Hello Worldd");
+        redirect.any("/", "/u/manage_trail.html");
+
     }
 
 }
