@@ -68,12 +68,17 @@ src="${env.HEROKU_URL}/at_map.html">
 
     var menu = $('#shelter-menu');
 
+    function reloadMap() {
+        $( '#atrail-map' ).attr( 'src', function ( i, val ) { return val; });
+    }
+
     menu.change(function(event) {
         $.post(
             '${env.HEROKU_URL}/shelters/last',
             JSON.stringify({
                 id: $(event.target).val()
-            })
+            }),
+            reloadMap
         );
     });
 
