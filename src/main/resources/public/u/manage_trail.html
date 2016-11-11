@@ -81,7 +81,7 @@ src="${env.HEROKU_URL}/p/at_map.html">
                 id: $(event.target).val()
             }),
             reloadMap
-        );
+        ).fail(errorHandler);
     });
 
     copy.click(function(event) {
@@ -104,7 +104,18 @@ src="${env.HEROKU_URL}/p/at_map.html">
         });
     }
 
-    getShelters().then(getCurrentShelter);
+    function errorHandler(request) {
+        var resp = request.responseJSON || JSON.parse(request.responseText);
+        if ( request.status === 401 ) {
+            window.location.replace(resp.login);
+        } else {
+            alert( request.statusText );
+        }
+    }
+
+    getShelters()
+    .then(getCurrentShelter)
+    .fail(errorHandler);
 })();
     </script>
 </body>

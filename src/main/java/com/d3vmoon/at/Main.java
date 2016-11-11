@@ -1,6 +1,7 @@
 package com.d3vmoon.at;
 
 import com.d3vmoon.at.service.ATService;
+import com.d3vmoon.at.service.SecurityService;
 import com.d3vmoon.at.service.ShelterService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -12,7 +13,8 @@ public class Main {
 
     public static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-    private ShelterService shelterService = new ShelterService();
+    private final ShelterService shelterService = new ShelterService();
+    private final SecurityService securityService = new SecurityService();
 
     public static void main(String[] args)  {
 
@@ -22,6 +24,8 @@ public class Main {
     public void init() {
         port(Integer.valueOf(System.getenv("PORT")));
         staticFileLocation("/public");
+
+        before("/api/*", securityService::authenticate);
 
         get(CURRENT_TRAIL, new ATService()::getCurrentTrail, gson::toJson);
 
