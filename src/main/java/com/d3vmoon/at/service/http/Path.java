@@ -8,5 +8,7 @@ public class Path {
     public static final String CURRENT_TRAIL = API_BASE + "currentTrail";
     public static final String SHELTERS = API_BASE + "shelters/";
 
+    public static final String SESSIONS = API_BASE + "sessions/";
+
     public static final String PARAM_ID = ":id";
 }
