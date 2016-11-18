@@ -32,7 +32,7 @@
                 <div class="col-sm-offset-2 col-sm-10">
                     <div class="checkbox">
                         <label>
-                            <input type="checkbox"> Remember me
+                            <input type="checkbox" id="login-remember-me"> Remember me
                         </label>
                     </div>
                 </div>
@@ -94,7 +94,19 @@
         console.log(request);
     }
 
-    function redirect() {
+    function redirect(response) {
+        localStorage.removeItem('session-token');
+        sessionStorage.removeItem('session-token');
+
+        var token = JSON.parse(response).token;
+        var rememberMe = $('#login-remember-me').is(':checked');
+
+        if ( rememberMe ) {
+            localStorage.setItem('session-token', token);
+        } else {
+            sessionStorage.setItem('session-token', token);
+        }
+
         console.log('redirecting ...');
     }
 
