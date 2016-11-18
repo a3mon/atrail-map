@@ -14,7 +14,7 @@
 <div class="container">
     <p></p>
     <div class="jumbotron">
-        <h1 class="text-center">Hello, pleas login!</h1>
+        <h1 class="text-center">Hello, please login!</h1>
         <form class="form-horizontal">
             <div class="form-group">
                 <label for="login-email" class="col-sm-2 control-label">Email</label>
@@ -107,7 +107,14 @@
             sessionStorage.setItem('session-token', token);
         }
 
-        console.log('redirecting ...');
+        var redirect = '${env.HEROKU_URL}/u/manage_trail.html'
+        var params = new URLSearchParams(window.location.search);
+
+        if ( params.has('redirect') ) {
+            redirect = params.get('redirect');
+        }
+
+        window.location.replace(redirect);
     }
 
 })();
