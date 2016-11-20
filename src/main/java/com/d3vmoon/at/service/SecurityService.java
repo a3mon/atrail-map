@@ -2,8 +2,11 @@ package com.d3vmoon.at.service;
 
 import com.d3vmoon.at.service.pojo.Login;
 import com.google.common.collect.ImmutableMap;
+import org.jooq.Record1;
 import org.jooq.Record2;
 import org.mindrot.jbcrypt.BCrypt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Spark;
@@ -19,6 +22,8 @@ import static org.jooq.impl.DSL.select;
 
 public class SecurityService extends AbstractService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityService.class);
+
     public void authenticate(Request req, Response resp) {
         if ( "GET".equals(req.requestMethod())
              || SESSIONS.equals(req.pathInfo())
@@ -26,9 +31,27 @@ public class SecurityService extends AbstractService {
             return;
         }
 
-        Optional<String> authorization = Optional.ofNullable(req.headers("Authorization"));
+        final Optional<String> authorization = Optional.ofNullable(req.headers("Authorization"));
 
         if ( ! authorization.isPresent() ) {
+            Spark.halt(401, gson.toJson(new UnauthorizedResponse()));
+        }
+
+        final UUID token;
+        try {
+            token = UUID.fromString(authorization.get());
+        } catch (IllegalArgumentException e) {
+            LOGGER.debug("Invalid UUID", e);
+            Spark.halt(401, gson.toJson(new UnauthorizedResponse()));
+            return;
+        }
+
+        Optional<Record1<Integer>> userId = ctx.select(AT_SESSION.AT_USER)
+                .from(AT_SESSION)
+                .where(AT_SESSION.TOKEN.eq(token))
+                .fetchOptional();
+
+        if ( ! userId.isPresent() ) {
             Spark.halt(401, gson.toJson(new UnauthorizedResponse()));
         }
 

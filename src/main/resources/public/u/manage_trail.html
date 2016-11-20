@@ -66,6 +66,8 @@ src="${env.HEROKU_URL}/p/at_map.html">
 (function() {
     'use strict';
 
+    var sessionToken = sessionStorage.getItem('session-token') || localStorage.getItem('session-token');
+
     var menu = $('#shelter-menu');
     var copy = $('#copy-button');
     var mapSource = $('#map-source');
@@ -75,13 +77,18 @@ src="${env.HEROKU_URL}/p/at_map.html">
     }
 
     menu.change(function(event) {
-        $.post(
-            '${env.HEROKU_URL}/api/v1/shelters/last',
-            JSON.stringify({
+        $.ajax({
+            url: '${env.HEROKU_URL}/api/v1/shelters/last',
+            type: "POST",
+            contentType: 'application/json; charset=utf-8',
+            data: JSON.stringify({
                 id: $(event.target).val()
             }),
-            reloadMap
-        ).fail(errorHandler);
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader('Authorization', sessionToken);
+            },
+            success: reloadMap
+        }).fail(errorHandler);
     });
 
     copy.click(function(event) {
