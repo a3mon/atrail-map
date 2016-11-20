@@ -15,6 +15,11 @@
     <p></p>
     <div class="jumbotron">
         <h1 class="text-center">Hello, please login!</h1>
+        <div class="panel panel-danger hidden" id="login-error">
+            <div class="panel-body bg-danger">
+                <strong>You provided invalid credentials. Please try again.</strong>
+            </div>
+        </div>
         <form class="form-horizontal" id="login-form">
             <div class="form-group">
                 <label for="login-email" class="col-sm-2 control-label">Email</label>
@@ -76,6 +81,7 @@
 (function() {
     'use strict';
 
+    var loginError = $('#login-error');
     var loginButton = $('#login-submit');
     var loginFrom = $('#login-form');
 
@@ -87,6 +93,7 @@
      });
 
     function submitCredentials(event) {
+        loginError.addClass('hidden');
         $.post(
             '${env.HEROKU_URL}/api/v1/sessions/',
             JSON.stringify({
@@ -99,7 +106,8 @@
     }
 
     function errorHandler(request) {
-        console.log(request);
+        loginError.removeClass('hidden');
+        $('#login-password').focus();
     }
 
     function redirect(response) {
