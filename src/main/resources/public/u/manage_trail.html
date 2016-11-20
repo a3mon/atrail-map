@@ -68,6 +68,10 @@ src="${env.HEROKU_URL}/p/at_map.html">
 
     var sessionToken = sessionStorage.getItem('session-token') || localStorage.getItem('session-token');
 
+    if ( ! sessionToken ) {
+        window.location.replace('${env.HEROKU_URL}/p/login.html');
+    }
+
     var menu = $('#shelter-menu');
     var copy = $('#copy-button');
     var mapSource = $('#map-source');
