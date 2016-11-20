@@ -15,7 +15,7 @@
     <p></p>
     <div class="jumbotron">
         <h1 class="text-center">Hello, please login!</h1>
-        <form class="form-horizontal">
+        <form class="form-horizontal" id="login-form">
             <div class="form-group">
                 <label for="login-email" class="col-sm-2 control-label">Email</label>
                 <div class="col-sm-10">
@@ -76,10 +76,17 @@
 (function() {
     'use strict';
 
-    var login = $('#login-submit');
+    var loginButton = $('#login-submit');
+    var loginFrom = $('#login-form');
 
-    login.click(function(event) {
-        event.preventDefault();
+    loginButton.click(submitCredentials);
+    loginFrom.keydown(function(event) {
+        if (event.keyCode == 13) {
+            return submitCredentials();
+        }
+     });
+
+    function submitCredentials(event) {
         $.post(
             '${env.HEROKU_URL}/api/v1/sessions/',
             JSON.stringify({
@@ -88,7 +95,8 @@
             }),
             redirect
         ).fail(errorHandler);
-    });
+        return false;
+    }
 
     function errorHandler(request) {
         console.log(request);
