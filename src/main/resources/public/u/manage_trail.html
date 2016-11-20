@@ -3,24 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <title>Manage Trail</title>
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/js/bootstrap.min.js" integrity="sha384-BLiI7JTZm+JWlgKa0M0kGRpJbF2J8q+qreVrKBC47e3K6BW78kGLrCkeRX6I9RoK" crossorigin="anonymous"></script>
     <style type="text/css">
-.scrollable-menu {
-    height: auto;
-    max-height: 200px;
-    overflow-x: hidden;
+body {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+}
+
+.header {
+    margin-bottom: 2rem;
+
+    padding-right: 0;
+    padding-left: 0;
+    padding-bottom: 1rem;
+    border-bottom: .05rem solid #e5e5e5;
 }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="header clearfix">
+            <nav>
+                <ul class="nav nav-pills float-xs-right">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Manage <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/p/about.html">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Contact</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-secondary" href="#"><i class="fa fa-sign-out" aria-hidden="true"></i> Logout</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
         <h1>Manage your Progress</h1>
 
-        <p>Choose the shelter you last passed</p>
-
-        <select id="shelter-menu" name="shelter-menu" class="btn btn-default" ></select>
+        <div class="form-group">
+            <select id="shelter-menu" name="shelter-menu" class="form-control" aria-describedby="shelter-help" ></select>
+            <p id="shelter-help" class="form-text text-muted">Choose the shelter you passed last.</p>
+        </div>
 
         <h2>Embed your Map</h2>
         <div class="panel panel-default">
@@ -43,10 +72,10 @@
                         <p>Copy the following code into your site to embed the left map.</p>
                         <p>
                             <button id="copy-button" type="button" class="btn btn-default">
-                                <span class="glyphicon glyphicon-copy" aria-hidden="true"></span> Copy to Clipboard
+                                <i class="fa fa-clipboard" aria-hidden="true"></i> Copy to Clipboard
                             </button>
                         </p>
-                        <textarea id="map-source" style="width:300px; height:100px; "><iframe id="atrail-map"
+                        <textarea id="map-source" rows="5" class="form-control"><iframe id="atrail-map"
 name="Appalachian Trail Map"
 title="Appalachian Trail Map"
 width="300"
