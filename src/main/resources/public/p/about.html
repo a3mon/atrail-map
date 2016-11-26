@@ -167,7 +167,17 @@ body {
         localStorage.removeItem('session-token');
         sessionStorage.removeItem('session-token');
 
-        window.location.reload();
+        $.ajax({
+            url: '${env.HEROKU_URL}/api/v1/sessions/' + sessionToken,
+            type: 'DELETE',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader('Authorization', sessionToken);
+            },
+
+        }).always(function() {
+            window.location.reload();
+        });
+        return false;
     }
 
     $('#logout').click(logout);

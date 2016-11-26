@@ -32,6 +32,7 @@ public class Main {
         before("/api/*", securityService::authenticate);
 
         post(SESSIONS, securityService::login, gson::toJson);
+        delete(SESSIONS + PARAM_ID, securityService::logout, gson::toJson);
 
         get(CURRENT_TRAIL, new ATService()::getCurrentTrail, gson::toJson);
 

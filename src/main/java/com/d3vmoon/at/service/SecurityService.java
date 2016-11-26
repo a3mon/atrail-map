@@ -22,11 +22,13 @@ import static org.jooq.impl.DSL.select;
 
 public class SecurityService extends AbstractService {
 
+    public static final String USER_ID_PARAM = "user-id";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(SecurityService.class);
 
     public void authenticate(Request req, Response resp) {
         if ( "GET".equals(req.requestMethod())
-             || SESSIONS.equals(req.pathInfo())
+             || SESSIONS.equals(req.pathInfo()) && "POST".equals(req.requestMethod())
         ) {
             return;
         }
@@ -55,6 +57,7 @@ public class SecurityService extends AbstractService {
             Spark.halt(401, gson.toJson(new UnauthorizedResponse()));
         }
 
+        req.attribute(USER_ID_PARAM, userId.get().value1());
     }
 
     public Object login(Request req, Response resp) {
@@ -101,6 +104,26 @@ public class SecurityService extends AbstractService {
         }
 
         return ImmutableMap.of("token", token.toString());
+    }
+
+    public Object logout(Request req, Response resp) {
+
+        final Integer userId = req.attribute(USER_ID_PARAM);
+
+        LOGGER.debug("Logging out user {}", userId);
+
+        final int count = ctx.deleteFrom(AT_SESSION)
+                .where(AT_SESSION.AT_USER.eq(userId))
+                .execute();
+
+        if ( count > 1) {
+            LOGGER.error("Logged out more then one user. ({})", count);
+        } else if (count < 0) {
+            LOGGER.warn("Log out attempt failed.");
+        }
+
+        resp.status(204);
+        return "";
     }
 
     private static class UnauthorizedResponse {
