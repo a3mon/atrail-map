@@ -38,7 +38,7 @@ body {
                         <a class="nav-link" href="#">Contact</a>
                     </li>
                     <li class="nav-item">
-                        <a class="btn btn-secondary" href="#"><i class="fa fa-sign-out" aria-hidden="true"></i> Logout</a>
+                        <a id="logout" class="btn btn-secondary" href="#">Logout <i class="fa fa-sign-out" aria-hidden="true"></i></a>
                     </li>
                 </ul>
             </nav>
@@ -152,6 +152,15 @@ src="${env.HEROKU_URL}/p/at_map.html">
             alert( request.statusText );
         }
     }
+
+    function logout() {
+        localStorage.removeItem('session-token');
+        sessionStorage.removeItem('session-token');
+
+        window.location.reload();
+    }
+
+    $('#logout').click(logout);
 
     getShelters()
     .then(getCurrentShelter)
