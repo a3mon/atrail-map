@@ -17,6 +17,7 @@ import java.util.UUID;
 import static com.d3vmoon.at.db.Tables.AT_SESSION;
 import static com.d3vmoon.at.db.tables.AtUser.AT_USER;
 import static com.d3vmoon.at.service.http.Path.SESSIONS;
+import static com.d3vmoon.at.service.http.Path.USERS;
 import static org.jooq.impl.DSL.lower;
 import static org.jooq.impl.DSL.select;
 
@@ -28,7 +29,8 @@ public class SecurityService extends AbstractService {
 
     public void authenticate(Request req, Response resp) {
         if ( "GET".equals(req.requestMethod())
-             || SESSIONS.equals(req.pathInfo()) && "POST".equals(req.requestMethod())
+            || SESSIONS.equals(req.pathInfo()) && "POST".equals(req.requestMethod())
+            || USERS.equals(req.pathInfo()) && "POST".equals(req.requestMethod())
         ) {
             return;
         }
@@ -121,6 +123,12 @@ public class SecurityService extends AbstractService {
         } else if (count < 0) {
             LOGGER.warn("Log out attempt failed.");
         }
+
+        resp.status(204);
+        return "";
+    }
+
+    public Object signup(Request req, Response resp) {
 
         resp.status(204);
         return "";

@@ -53,14 +53,14 @@ body {
         </div>
         <form id="login-form">
             <div class="form-group row">
-                <label for="login-email" class="col-xs-2 col-form-label">Email</label>
-                <div class="col-xs-10">
+                <label for="login-email" class="hidden-xs-down col-sm-2 col-form-label">Email</label>
+                <div class="col-xs-12 col-sm-10">
                     <input type="email" class="form-control" id="login-email" placeholder="Email">
                 </div>
             </div>
             <div class="form-group row">
-                <label for="login-password" class="col-xs-2 col-form-label">Password</label>
-                <div class="col-xs-10">
+                <label for="login-password" class="hidden-xs-down col-sm-2 col-form-label">Password</label>
+                <div class="col-xs-12 col-sm-10">
                     <input type="password" class="form-control" id="login-password" placeholder="Password">
                 </div>
             </div>
@@ -82,23 +82,26 @@ body {
     </div>
     <h1 id="sign-up" class="text-xs-center" >Aren't an User yet?</h1>
     <p class="text-xs-center" >Sign up here to get your own tracker for the AT.</p>
-    <form>
-        <div class="form-group row">
-            <label for="register-email" class="col-xs-2 col-form-label">Email</label>
-            <div class="col-xs-10">
+    <form id="register-form">
+        <div class="form-group row" id="register-email-group">
+            <label for="register-email" class="hidden-xs-down col-sm-2 col-form-label">Email</label>
+            <div class="col-xs-12 col-sm-10">
                 <input type="email" class="form-control" id="register-email" placeholder="Email">
+                <div class="form-control-feedback hidden-xs-up" id="register-email-error">Please enter a valid email address.</div>
             </div>
         </div>
-        <div class="form-group row">
-            <label for="register-password" class="col-xs-2 col-form-label">Password</label>
-            <div class="col-xs-10">
+        <div class="form-group row" id="register-password-group">
+            <label for="register-password" class="hidden-xs-down col-sm-2 col-form-label">Password</label>
+            <div class="col-xs-12 col-sm-10">
                 <input type="password" class="form-control" id="register-password" placeholder="Password">
+                <div class="form-control-feedback hidden-xs-up" id="register-password-error">Please enter a strong password.</div>
             </div>
         </div>
-        <div class="form-group row">
-            <label for="register-repeat" class="col-xs-2 col-form-label">Repeat</label>
-            <div class="col-xs-10">
-                <input type="password" class="form-control" id="register-repeat" placeholder="Password">
+        <div class="form-group row" id="register-repeat-group">
+            <label for="register-repeat" class="hidden-xs-down col-sm-2 col-form-label">Repeat</label>
+            <div class="col-xs-12 col-sm-10">
+                <input type="password" class="form-control" id="register-repeat" placeholder="Repeat">
+                <div class="form-control-feedback hidden-xs-up" id="register-repeat-error">Sorry, your passwords don't match.</div>
             </div>
         </div>
         <div class="form-group row">
@@ -162,6 +165,88 @@ body {
         }
 
         window.location.replace(redirect);
+    }
+
+    var registerButton = $('#register-submit');
+    var registerForm = $('#register-form');
+
+    registerButton.click(submitSignup);
+    registerForm.keydown(function(event) {
+        if (event.keyCode == 13) {
+            return submitSignup();
+        }
+    });
+
+    var registerPassword = $('#register-password');
+    var registerRepeat = $('#register-repeat');
+
+    var registerPasswordGroup = $('#register-password-group');
+    var registerPasswordError = $('#register-password-error');
+    var registerRepeatGroup = $('#register-repeat-group');
+    var registerRepeatError = $('#register-repeat-error');
+
+    registerPassword.change(checkPassword);
+    registerRepeat.change(checkPassword);
+
+    function checkPassword() {
+        if ( registerPassword.val().length <= 0 ) {
+            registerPasswordGroup.addClass('has-danger');
+            registerPasswordError.removeClass('hidden-xs-up');
+            return false;
+        } else {
+            registerPasswordGroup.removeClass('has-danger');
+            registerPasswordError.addClass('hidden-xs-up');
+        }
+
+        return registerRepeat.val().length > 0 && checkRepeat();
+    }
+
+    function checkRepeat() {
+        if ( registerPassword.val() !== registerRepeat.val() ) {
+            registerRepeatGroup.addClass('has-danger');
+            registerRepeatError.removeClass('hidden-xs-up');
+            return false;
+        } else {
+            registerRepeatGroup.removeClass('has-danger');
+            registerRepeatError.addClass('hidden-xs-up');
+            return true;
+        }
+    }
+
+    var registerEmail = $('#register-email');
+
+    var registerEmailGroup = $('#register-email-group');
+    var registerEmailError = $('#register-email-error');
+
+    registerEmail.change(checkEmail);
+
+    function checkEmail() {
+        if ( ! /\S+@\S+\.\S+/.test(registerEmail.val()) ) {
+            registerEmailGroup.addClass('has-danger');
+            registerEmailError.removeClass('hidden-xs-up');
+            return false;
+        } else {
+            registerEmailGroup.removeClass('has-danger');
+            registerEmailError.addClass('hidden-xs-up');
+            return true;
+        }
+    }
+
+    function submitSignup() {
+        if ( checkEmail() && checkRepeat() && checkPassword() ) {
+            $.post(
+                '${env.HEROKU_URL}/api/v1/users/',
+                JSON.stringify({
+                    email: $('#register-email').val(),
+                    password: $('#register-password').val()
+                })
+            )
+            .done( function() { console.log('success'); } )
+            .fail( function() { console.log('error'); } );
+        } else {
+            console.log('validation fail');
+        }
+        return false;
     }
 
 })();

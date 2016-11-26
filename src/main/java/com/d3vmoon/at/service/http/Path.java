@@ -9,6 +9,7 @@ public class Path {
     public static final String SHELTERS = API_BASE + "shelters/";
 
     public static final String SESSIONS = API_BASE + "sessions/";
+    public static final String USERS = API_BASE + "users/";
 
     public static final String PARAM_ID = ":id";
 }

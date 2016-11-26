@@ -34,6 +34,8 @@ public class Main {
         post(SESSIONS, securityService::login, gson::toJson);
         delete(SESSIONS + PARAM_ID, securityService::logout, gson::toJson);
 
+        post(USERS, securityService::signup, gson::toJson);
+
         get(CURRENT_TRAIL, new ATService()::getCurrentTrail, gson::toJson);
 
         get(SHELTERS, shelterService::getShelters, gson::toJson);
