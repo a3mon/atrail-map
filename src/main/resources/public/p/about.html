@@ -21,6 +21,16 @@ body {
     padding-bottom: 1rem;
     border-bottom: .05rem solid #e5e5e5;
 }
+
+.card-img-top {
+    height: auto;
+    width: 100%;
+    display: block;
+    vertical-align: middle;
+    border-style: none;
+}
+
+
     </style>
 </head>
 <body>
@@ -38,13 +48,109 @@ body {
                     <a class="nav-link" href="#">Contact</a>
                 </li>
                 <li class="nav-item">
-                    <a class="btn btn-secondary" href="#"><i class="fa fa-sign-out" aria-hidden="true"></i> Logout</a>
+                    <a id="login" class="btn btn-secondary" href="/p/login.html"><i class="fa fa-sign-in" aria-hidden="true"></i> Login</a>
+                    <a id="logout" class="btn btn-secondary hidden-xs-up" href="#">Logout <i class="fa fa-sign-out" aria-hidden="true"></i></a>
                 </li>
             </ul>
         </nav>
     </div>
 
-    <h1>About</h1>
+    <div class="card-deck-wrapper">
+        <div class="card-deck">
+            <div class="card">
+                <img class="card-img-top" src="/r/hike_girl.jpg" alt="Card image cap">
+                <div class="card-block">
+                    <h4 class="card-title">Going on an Adventure?</h4>
+                    <p class="card-text">
+                        But you are leaving your family and friends behind?
+                        They are worried about you? They want to follow you and stay
+                        updated about your location?
+                    </p>
+                </div>
+            </div>
+            <div class="card">
+                <img class="card-img-top" src="/r/sofa.jpg" alt="Card image cap">
+                <div class="card-block">
+                    <h4 class="card-title">Without your Loved Ones?</h4>
+                    <p class="card-text">
+                        But you are leaving your family and friends behind?
+                        They are worried about you? They want to follow you and stay
+                        updated about your location?
+                    </p>
+                </div>
+            </div>
+            <div class="card">
+                <iframe id="atrail-map"
+                        name="Appalachian Trail Map"
+                        title="Appalachian Trail Map"
+                        class="card-img-top"
+                        frameborder="0"
+                        scrolling="no"
+                        marginheight="0"
+                        marginwidth="0"
+                        src="${env.HEROKU_URL}/p/at_map.html">
+                </iframe>
+                <div class="card-block">
+                    <h4 class="card-title">Show them where you are!</h4>
+                    <p class="card-text">
+                        Sign up and embed a map like this on your blog. Easily update
+                        your progress with just a view clicks. Now everybody can folow
+                        you easily.
+                    </p>
+                    <a href="/p/login.html#sing-up" class="btn btn-primary float-xs-right">Sign Up</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="text-xs-center">How does it work</h2>
+
+    <p>
+        We provide a simple and easy way to update your progress on the Applachian Trail. The
+        idea is to provide a map where the trail is shown as long, as you have hiked it. To
+        update your progress you select the last shelter you have passed. The nearest point
+        on the trail is used as marker for your progress. You can embed the map on your blog,
+        send the link to your friends, or what ever you like to do with it.
+    </p>
+
+    <p>
+        We ourselves are hiking the AT northbound in 2017. And we have been asked by our family,
+        friends and colleagues how they can follow us. The obvious are blogs and photo albums. But
+        we thought it would be awesome for them to see the actual miles we hiked. Therefore we
+        will use and test this service firsthand in 2017.
+    </p>
+
+    <p class="clearfix">
+        At the moment you can <a href="/p/login.html#sing-up">sign up</a> for free. However, if
+        you like you can support us and this service.
+        <a class="btn btn-secondary float-xs-right" href="#"><i class="fa fa-paypal" aria-hidden="true"></i> Donate</a>
+    </p>
+
+    <hr>
+
+    <h3 class="text-xs-center">Our thanks goes to</h3>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12 col-sm-6">
+                <h4 class="text-muted">appalachiantrail.org</h4>
+                <p>
+                    The data we use is provided by the
+                    <a href="http://www.appalachiantrail.org" target="_blank">National Park Service Appalachian Trail Park Office &amp; Appalachian Trail Conservancy</a>,
+                    who we thank and respect for their efforts and work.
+                </p>
+            </div>
+            <div class="col-xs-12 col-sm-6">
+                <h4 class="text-muted"git>Photographers</h4>
+                <p>
+                    Many pictures used on this side are under public domain. But we still want to give
+                    credit. In this
+                    <a href="https://unsplash.com/collections/436900/atrail-map" target="_blank">Unsplash album</a>
+                    you can find them and the photographers.
+                </p>
+            </div>
+        </div>
+    </div>
 
 
 </div>
@@ -54,6 +160,21 @@ body {
 
     var sessionToken = sessionStorage.getItem('session-token') || localStorage.getItem('session-token');
 
+    if ( sessionToken ) {
+        $('#login').addClass('hidden-xs-up');
+        $('#logout').removeClass('hidden-xs-up');
+    }
+
+    function logout() {
+        localStorage.removeItem('session-token');
+        sessionStorage.removeItem('session-token');
+
+        window.location.reload();
+    }
+
+    $('#logout').click(logout);
+
+})();
     </script>
 </body>
 </html>
