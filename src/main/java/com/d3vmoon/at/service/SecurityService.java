@@ -1,6 +1,6 @@
 package com.d3vmoon.at.service;
 
-import com.d3vmoon.at.service.pojo.Login;
+import com.d3vmoon.at.service.pojo.Credentials;
 import com.google.common.collect.ImmutableMap;
 import org.jooq.Record1;
 import org.jooq.Record2;
@@ -14,6 +14,7 @@ import spark.Spark;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.d3vmoon.at.db.Tables.AT_CONFIRMATION;
 import static com.d3vmoon.at.db.Tables.AT_SESSION;
 import static com.d3vmoon.at.db.tables.AtUser.AT_USER;
 import static com.d3vmoon.at.service.http.Path.SESSIONS;
@@ -22,6 +23,7 @@ import static org.jooq.impl.DSL.lower;
 import static org.jooq.impl.DSL.select;
 
 public class SecurityService extends AbstractService {
+
 
     public static final String USER_ID_PARAM = "user-id";
 
@@ -63,11 +65,11 @@ public class SecurityService extends AbstractService {
     }
 
     public Object login(Request req, Response resp) {
-        final Login login = gson.fromJson(req.body(), Login.class);
+        final Credentials credentials = gson.fromJson(req.body(), Credentials.class);
 
         final Optional<Record2<Integer, String>> record = ctx.select(AT_USER.ID, AT_USER.PASSWORD)
                 .from(AT_USER)
-                .where(lower(AT_USER.EMAIL).eq(lower(login.email)))
+                .where(lower(AT_USER.EMAIL).eq(lower(credentials.email)))
                 .fetchOptional();
 
         if ( ! record.isPresent() ) {
@@ -76,7 +78,7 @@ public class SecurityService extends AbstractService {
         }
 
         final boolean isAuthenticated = BCrypt.checkpw(
-                login.password,
+                credentials.password,
                 record.get().get(AT_USER.PASSWORD)
         );
 
@@ -129,9 +131,30 @@ public class SecurityService extends AbstractService {
     }
 
     public Object signup(Request req, Response resp) {
+        final Credentials credentials = gson.fromJson(req.body(), Credentials.class);
+
+        final String hash = BCrypt.hashpw(credentials.password, BCrypt.gensalt());
+
+        Integer userId = ctx.insertInto(AT_USER, AT_USER.EMAIL, AT_USER.PASSWORD)
+                .values(credentials.email, hash)
+                .returning(AT_USER.ID)
+                .fetchOne()
+                .get(AT_USER.ID);
+
+        final UUID token = UUID.randomUUID();
+
+        ctx.insertInto(AT_CONFIRMATION, AT_CONFIRMATION.AT_USER, AT_CONFIRMATION.TOKEN)
+                .values(userId, token)
+                .execute();
+
+        sendConfirmationEmail(credentials.email, token);
 
         resp.status(204);
         return "";
+    }
+
+    private void sendConfirmationEmail(String email, UUID token) {
+
     }
 
     private static class UnauthorizedResponse {
