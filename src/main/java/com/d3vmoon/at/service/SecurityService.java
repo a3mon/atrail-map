@@ -2,6 +2,7 @@ package com.d3vmoon.at.service;
 
 import com.d3vmoon.at.service.pojo.Credentials;
 import com.google.common.collect.ImmutableMap;
+import com.sendgrid.*;
 import org.jooq.Record1;
 import org.jooq.Record2;
 import org.mindrot.jbcrypt.BCrypt;
@@ -11,6 +12,7 @@ import spark.Request;
 import spark.Response;
 import spark.Spark;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,6 +28,7 @@ public class SecurityService extends AbstractService {
 
 
     public static final String USER_ID_PARAM = "user-id";
+    public static final String HEROKU_URL = System.getenv("HEROKU_URL");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SecurityService.class);
 
@@ -41,6 +44,7 @@ public class SecurityService extends AbstractService {
 
         if ( ! authorization.isPresent() ) {
             Spark.halt(401, gson.toJson(new UnauthorizedResponse()));
+            return;
         }
 
         final UUID token;
@@ -59,6 +63,7 @@ public class SecurityService extends AbstractService {
 
         if ( ! userId.isPresent() ) {
             Spark.halt(401, gson.toJson(new UnauthorizedResponse()));
+            return;
         }
 
         req.attribute(USER_ID_PARAM, userId.get().value1());
@@ -143,22 +148,52 @@ public class SecurityService extends AbstractService {
 
         final UUID token = UUID.randomUUID();
 
-        ctx.insertInto(AT_CONFIRMATION, AT_CONFIRMATION.AT_USER, AT_CONFIRMATION.TOKEN)
-                .values(userId, token)
-                .execute();
+        if ( sendConfirmationEmail(credentials.email, token) ) {
+            ctx.insertInto(AT_CONFIRMATION, AT_CONFIRMATION.AT_USER, AT_CONFIRMATION.TOKEN)
+                    .values(userId, token)
+                    .execute();
 
-        sendConfirmationEmail(credentials.email, token);
+            sendConfirmationEmail(credentials.email, token);
 
-        resp.status(204);
-        return "";
+            resp.status(204);
+            return "";
+        } else {
+            resp.status(400);
+            return "";
+        }
     }
 
-    private void sendConfirmationEmail(String email, UUID token) {
+    private boolean sendConfirmationEmail(String email, UUID token) {
+        final Email from = new Email("doNotReply@atrail-map.herokuapp.com");
+        final String subject = "Please confirm your Email address!";
+        final Email to = new Email(email);
+        final Content content = new Content("text/plain",
+                "Hello and thanks for your registration.\n\n" +
+                "To complete your registration, please follow this link: " +
+                HEROKU_URL + "p/confirm.html?token=" + token.toString() + "\n\n" +
+                "Thanks and have a good hike!"
+        );
 
+        final Mail mail = new Mail(from, subject, to, content);
+
+        final SendGrid sg = new SendGrid(System.getenv("SENDGRID_API_KEY"));
+        final com.sendgrid.Request request = new com.sendgrid.Request();
+        request.method = Method.POST;
+        request.endpoint = "mail/send";
+        try {
+            request.body = mail.build();
+            final com.sendgrid.Response response = sg.api(request);
+
+            LOGGER.info("Sent mail with status {}", response.statusCode);
+            return true;
+        } catch (IOException ex) {
+            LOGGER.error("Could not send Email.", ex);
+            return false;
+        }
     }
 
     private static class UnauthorizedResponse {
-        final String login = System.getenv("HEROKU_URL") + "/p/login.html";
+        final String login = HEROKU_URL + "/p/login.html";
     }
 
     private static class CouldNotAuthenticateResponse extends UnauthorizedResponse {
