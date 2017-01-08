@@ -243,8 +243,8 @@ body {
         var emailError = $('#register-error');
 
         if ( checkEmail() && checkRepeat() && checkPassword() ) {
+            emailError.addClass('hidden-xs-up');
             $.post(
-                emailError.addClass('hidden-xs-up'),
                 '${env.HEROKU_URL}/api/v1/users/',
                 JSON.stringify({
                     email: $('#register-email').val(),
@@ -254,7 +254,6 @@ body {
             .done( function() { console.log('success'); } )
             .fail( function() {
                 emailError.removeClass('hidden-xs-up');
-                console.log('error');
             } );
         } else {
             console.log('validation fail');

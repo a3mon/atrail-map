@@ -179,7 +179,7 @@ public class SecurityService extends AbstractService {
         final Content content = new Content("text/plain",
                 "Hello and thanks for your registration.\n\n" +
                 "To complete your registration, please follow this link: " +
-                HEROKU_URL + "p/confirm.html?token=" + token.toString() + "\n\n" +
+                HEROKU_URL + "/p/confirm.html?token=" + token.toString() + "\n\n" +
                 "Thanks and have a good hike!"
         );
 
