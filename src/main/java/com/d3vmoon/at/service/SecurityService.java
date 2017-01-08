@@ -138,6 +138,15 @@ public class SecurityService extends AbstractService {
     public Object signup(Request req, Response resp) {
         final Credentials credentials = gson.fromJson(req.body(), Credentials.class);
 
+        if ( ctx.fetchExists(
+                select(AT_USER.ID)
+                .from(AT_USER)
+                .where(lower(AT_USER.EMAIL).eq(lower(credentials.email)))
+        ) ) {
+            resp.status(409);
+            return new EmailAddressAlreadyRegisterdResponse();
+        }
+
         final String hash = BCrypt.hashpw(credentials.password, BCrypt.gensalt());
 
         Integer userId = ctx.insertInto(AT_USER, AT_USER.EMAIL, AT_USER.PASSWORD)
@@ -198,5 +207,9 @@ public class SecurityService extends AbstractService {
 
     private static class CouldNotAuthenticateResponse extends UnauthorizedResponse {
         final String message = "Could not authenticate.";
+    }
+
+    private static class EmailAddressAlreadyRegisterdResponse {
+        final String message = "This email is already registered.";
     }
 }

@@ -104,6 +104,13 @@ body {
                 <div class="form-control-feedback hidden-xs-up" id="register-repeat-error">Sorry, your passwords don't match.</div>
             </div>
         </div>
+        <div class="card card-inverse card-danger text-xs-center hidden-xs-up" id="register-error">
+            <div class="card-block">
+                <p class="card-text" style="color: white;">
+                    <strong>This email is already signed up.</strong>
+                </p>
+            </div>
+        </div>
         <div class="form-group row">
             <div class="offset-sm-2 col-xs-10">
                 <a href="#" class="btn btn-secondary" id="register-submit">Sign Up</a>
@@ -233,8 +240,11 @@ body {
     }
 
     function submitSignup() {
+        var emailError = $('#register-error');
+
         if ( checkEmail() && checkRepeat() && checkPassword() ) {
             $.post(
+                emailError.addClass('hidden-xs-up'),
                 '${env.HEROKU_URL}/api/v1/users/',
                 JSON.stringify({
                     email: $('#register-email').val(),
@@ -242,7 +252,10 @@ body {
                 })
             )
             .done( function() { console.log('success'); } )
-            .fail( function() { console.log('error'); } );
+            .fail( function() {
+                emailError.removeClass('hidden-xs-up');
+                console.log('error');
+            } );
         } else {
             console.log('validation fail');
         }
