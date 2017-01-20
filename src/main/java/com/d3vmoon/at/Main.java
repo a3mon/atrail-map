@@ -25,7 +25,7 @@ public class Main {
         new Main().init();
     }
 
-    public void init() {
+    private void init() {
         port(Integer.valueOf(System.getenv("PORT")));
         staticFileLocation("/public");
 
@@ -36,6 +36,8 @@ public class Main {
 
         post(USERS, securityService::signup, gson::toJson);
 
+        post(CONFIRMATIONS, securityService::confirm, gson::toJson);
+
         get(CURRENT_TRAIL, new ATService()::getCurrentTrail, gson::toJson);
 
         get(SHELTERS, shelterService::getShelters, gson::toJson);
@@ -44,9 +46,7 @@ public class Main {
 
         redirect.any("/", "/u/manage_trail.html");
 
-        exception(Exception.class, (exception, request, response) -> {
-            LOGGER.error("uuups...", exception);
-        });
+        exception(Exception.class, (exception, request, response) -> LOGGER.error("uuups...", exception));
     }
 
 }

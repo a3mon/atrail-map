@@ -1,10 +1,13 @@
 package com.d3vmoon.at.service;
 
+import com.d3vmoon.at.db.enums.AtRole;
+import com.d3vmoon.at.service.pojo.Confirmation;
 import com.d3vmoon.at.service.pojo.Credentials;
 import com.google.common.collect.ImmutableMap;
 import com.sendgrid.*;
 import org.jooq.Record1;
 import org.jooq.Record2;
+import org.jooq.Record4;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +22,7 @@ import java.util.UUID;
 import static com.d3vmoon.at.db.Tables.AT_CONFIRMATION;
 import static com.d3vmoon.at.db.Tables.AT_SESSION;
 import static com.d3vmoon.at.db.tables.AtUser.AT_USER;
-import static com.d3vmoon.at.service.http.Path.SESSIONS;
-import static com.d3vmoon.at.service.http.Path.USERS;
+import static com.d3vmoon.at.service.http.Path.*;
 import static org.jooq.impl.DSL.lower;
 import static org.jooq.impl.DSL.select;
 
@@ -36,6 +38,7 @@ public class SecurityService extends AbstractService {
         if ( "GET".equals(req.requestMethod())
             || SESSIONS.equals(req.pathInfo()) && "POST".equals(req.requestMethod())
             || USERS.equals(req.pathInfo()) && "POST".equals(req.requestMethod())
+            || CONFIRMATIONS.equals(req.pathInfo()) && "POST".equals(req.requestMethod())
         ) {
             return;
         }
@@ -162,14 +165,39 @@ public class SecurityService extends AbstractService {
                     .values(userId, token)
                     .execute();
 
-            sendConfirmationEmail(credentials.email, token);
-
             resp.status(204);
             return "";
         } else {
             resp.status(400);
             return "";
         }
+    }
+
+    public Object confirm(Request req, Response resp) {
+        final Confirmation confirmation = gson.fromJson(req.body(), Confirmation.class);
+
+        Optional<Record4<Integer, String, Integer, UUID>> result = ctx.select(AT_USER.ID, AT_USER.EMAIL, AT_CONFIRMATION.ID, AT_CONFIRMATION.TOKEN)
+                .from(AT_USER).join(AT_CONFIRMATION).on(AT_USER.ID.eq(AT_CONFIRMATION.AT_USER))
+                .where(lower(AT_USER.EMAIL).eq(lower(confirmation.email)))
+                .and(AT_CONFIRMATION.TOKEN.eq(UUID.fromString(confirmation.token)))
+                .fetchOptional();
+
+        if (result.isPresent()) {
+            ctx.update(AT_USER)
+                    .set(AT_USER.ROLE, AtRole.user)
+                    .where(AT_USER.ID.eq(result.get().field(AT_USER.ID)))
+                    .execute();
+
+            ctx.delete(AT_CONFIRMATION)
+                    .where(AT_CONFIRMATION.ID.eq(result.get().field(AT_CONFIRMATION.ID)))
+                    .execute();
+
+            resp.status(204);
+        } else {
+            resp.status(400);
+        }
+
+        return "";
     }
 
     private boolean sendConfirmationEmail(String email, UUID token) {
@@ -179,7 +207,8 @@ public class SecurityService extends AbstractService {
         final Content content = new Content("text/plain",
                 "Hello and thanks for your registration.\n\n" +
                 "To complete your registration, please follow this link: " +
-                HEROKU_URL + "/p/confirm.html?token=" + token.toString() + "\n\n" +
+                HEROKU_URL + "/p/confirm.html?token=" + token.toString() +
+                "&email=" + email + "\n\n" +
                 "Thanks and have a good hike!"
         );
 
