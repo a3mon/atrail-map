@@ -251,7 +251,7 @@ body {
                     password: $('#register-password').val()
                 })
             )
-            .done( function() { console.log('success'); } )
+            .done( function() { window.location.replace('${env.HEROKU_URL}/p/signup_success.html'); } )
             .fail( function() {
                 emailError.removeClass('hidden-xs-up');
             } );
