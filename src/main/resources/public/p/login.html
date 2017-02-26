@@ -151,17 +151,21 @@ body {
         $('#login-password').focus();
     }
 
-    function redirect(response) {
+    function redirect(res) {
         localStorage.removeItem('session-token');
         sessionStorage.removeItem('session-token');
 
-        var token = JSON.parse(response).token;
+        var response = JSON.parse(res);
+        var token = response.token;
+        var userId = response['user-id'];
         var rememberMe = $('#login-remember-me').is(':checked');
 
         if ( rememberMe ) {
             localStorage.setItem('session-token', token);
+            localStorage.setItem('user-id', userID);
         } else {
             sessionStorage.setItem('session-token', token);
+            sessionStorage.setItem('user-id', userId);
         }
 
         var redirect = '${env.HEROKU_URL}/u/manage_trail.html'

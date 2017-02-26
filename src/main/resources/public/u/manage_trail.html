@@ -75,17 +75,7 @@ body {
                                 <i class="fa fa-clipboard" aria-hidden="true"></i> Copy to Clipboard
                             </button>
                         </p>
-                        <textarea id="map-source" rows="5" class="form-control"><iframe id="atrail-map"
-name="Appalachian Trail Map"
-title="Appalachian Trail Map"
-width="300"
-height="300"
-frameborder="0"
-scrolling="no"
-marginheight="0"
-marginwidth="0"
-src="${env.HEROKU_URL}/p/at_map.html">
-</iframe></textarea>
+                        <textarea id="map-source" rows="5" class="form-control"></textarea>
                     </div>
                 </div>
             </div>
@@ -101,9 +91,16 @@ src="${env.HEROKU_URL}/p/at_map.html">
         window.location.replace('${env.HEROKU_URL}/p/login.html');
     }
 
+    var userId = sessionStorage.getItem('user-id') || localStorage.getItem('user-id');
+
     var menu = $('#shelter-menu');
     var copy = $('#copy-button');
     var mapSource = $('#map-source');
+    var map = $('#atrail-map');
+
+    var url = map.attr('src');
+    map.attr('src', url + '?user-id=' + userId);
+    mapSource.val(map[0].outerHTML)
 
     function reloadMap() {
         $( '#atrail-map' ).attr( 'src', function ( i, val ) { return val; });
@@ -139,7 +136,7 @@ src="${env.HEROKU_URL}/p/at_map.html">
     }
 
     function getCurrentShelter() {
-        return $.getJSON('${env.HEROKU_URL}/api/v1/shelters/last', function(currentShelter) {
+        return $.getJSON('${env.HEROKU_URL}/api/v1/shelters/last?user-id=' + userId, function(currentShelter) {
             menu.val(currentShelter.id);
         });
     }

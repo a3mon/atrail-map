@@ -11,12 +11,14 @@ import java.util.Map;
 import static com.d3vmoon.at.db.Tables.AT_LAST_SHELTER;
 import static com.d3vmoon.at.db.Tables.AT_SHELTER;
 import static com.d3vmoon.at.db.Tables.AT_TRAIL;
+import static com.d3vmoon.at.service.SecurityService.PARAM_USER_ID;
 import static org.jooq.impl.DSL.*;
 
 public class ATService extends AbstractService {
 
     public List<Map<String, Double>> getCurrentTrail(Request req, Response resp) {
-    return ctx.select(AT_TRAIL.POINT)
+        final int userId = Integer.parseInt(req.queryParams(PARAM_USER_ID));
+        return ctx.select(AT_TRAIL.POINT)
             .from(AT_TRAIL)
             .where(AT_TRAIL.ID.le(
                     select(AT_TRAIL.ID)
@@ -28,6 +30,7 @@ public class ATService extends AbstractService {
                             .where(AT_SHELTER.ID.eq(
                                     select(AT_LAST_SHELTER.AT_SHELTER)
                                     .from(AT_LAST_SHELTER)
+                                    .where(AT_LAST_SHELTER.AT_USER.eq(userId))
                             ))
                     ).asc())
                     .limit(1)

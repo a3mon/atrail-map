@@ -19,18 +19,16 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.d3vmoon.at.db.Tables.AT_CONFIRMATION;
-import static com.d3vmoon.at.db.Tables.AT_SESSION;
+import static com.d3vmoon.at.db.Tables.*;
 import static com.d3vmoon.at.db.tables.AtUser.AT_USER;
 import static com.d3vmoon.at.service.http.Path.*;
-import static org.jooq.impl.DSL.lower;
-import static org.jooq.impl.DSL.select;
+import static org.jooq.impl.DSL.*;
 
 public class SecurityService extends AbstractService {
 
 
-    public static final String USER_ID_PARAM = "user-id";
-    public static final String HEROKU_URL = System.getenv("HEROKU_URL");
+    static final String PARAM_USER_ID = "user-id";
+    static final String HEROKU_URL = System.getenv("HEROKU_URL");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SecurityService.class);
 
@@ -69,7 +67,7 @@ public class SecurityService extends AbstractService {
             return;
         }
 
-        req.attribute(USER_ID_PARAM, userId.get().value1());
+        req.attribute(PARAM_USER_ID, userId.get().value1());
     }
 
     public Object login(Request req, Response resp) {
@@ -115,12 +113,15 @@ public class SecurityService extends AbstractService {
                     .execute();
         }
 
-        return ImmutableMap.of("token", token.toString());
+        return ImmutableMap.of(
+                "token", token.toString(),
+                PARAM_USER_ID, userId
+        );
     }
 
     public Object logout(Request req, Response resp) {
 
-        final Integer userId = req.attribute(USER_ID_PARAM);
+        final Integer userId = req.attribute(PARAM_USER_ID);
 
         LOGGER.debug("Logging out user {}", userId);
 
@@ -157,6 +158,12 @@ public class SecurityService extends AbstractService {
                 .returning(AT_USER.ID)
                 .fetchOne()
                 .get(AT_USER.ID);
+
+        final int shelter = ctx.select(min(AT_SHELTER.ID)).from(AT_SHELTER).fetchOne().value1();
+
+        ctx.insertInto(AT_LAST_SHELTER, AT_LAST_SHELTER.AT_USER, AT_LAST_SHELTER.AT_SHELTER)
+                .values(userId, shelter)
+                .execute();
 
         final UUID token = UUID.randomUUID();
 
