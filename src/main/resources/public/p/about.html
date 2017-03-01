@@ -120,8 +120,15 @@ body {
     <p class="clearfix">
         At the moment you can <a href="/p/login.html#sign-up">sign up</a> for free. However, if
         you like you can support us and this service.
-        <a class="btn btn-secondary float-xs-right" href="#"><i class="fa fa-paypal" aria-hidden="true"></i> Donate</a>
     </p>
+    <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+        <input type="hidden" name="cmd" value="_s-xclick">
+        <input type="hidden" name="hosted_button_id" value="DP8TVV35GAVQU">
+        <button type="submit" class="btn btn-secondary">
+            <i class="fa fa-paypal" aria-hidden="true"></i> Donate
+        </button>
+    </form>
+
 
     <hr>
 
