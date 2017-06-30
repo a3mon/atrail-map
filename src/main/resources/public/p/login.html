@@ -2,11 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="google-signin-client_id" content="1071345134266-5s1v1hqhn8ao690jrp89j6r24l57bggs.apps.googleusercontent.com">
     <title>Login</title>
     <link rel="icon" type="image/ico" href="/r/favicon-map.ico">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/js/bootstrap.min.js" integrity="sha384-BLiI7JTZm+JWlgKa0M0kGRpJbF2J8q+qreVrKBC47e3K6BW78kGLrCkeRX6I9RoK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <script src="https://unpkg.com/vue@2.3.4/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/axios@0.16.2/dist/axios.min.js"></script>
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
     <style type="text/css">
 body {
     padding-top: 1.5rem;
@@ -21,10 +25,15 @@ body {
     padding-bottom: 1rem;
     border-bottom: .05rem solid #e5e5e5;
 }
+
+.btn-google {
+    color: #fff;
+    background-color: #dd4b39;
+}
     </style>
 </head>
 <body>
-<div class="container">
+<div id="app" class="container">
     <div class="header clearfix">
         <nav>
             <ul class="nav nav-pills float-xs-right">
@@ -44,228 +53,212 @@ body {
         </nav>
     </div>
     <div class="jumbotron">
-        <h1 class="text-xs-center">Hello, please login!</h1>
-        <div class="card card-inverse card-danger text-xs-center hidden-xs-up" id="login-error">
+        <p>
+            <h1 class="text-xs-center">Hello, please login!</h1>
+        </p>
+        <p class="text-xs-center">
+            <button id="login-google" type="button" class="btn btn-google">
+                <i class="fa fa-google" aria-hidden="true"></i> Sign in with Google
+             </button>
+        </p>
+        <p class="text-xs-center">or</p>
+        <div class="card card-inverse card-danger text-xs-center" v-bind:class="{ 'hidden-xs-up': !login.error }">
             <div class="card-block">
                 <p class="card-text" style="color: white;">
                     <strong>You provided invalid credentials. Please try again.</strong>
                 </p>
             </div>
         </div>
-        <form id="login-form">
+        <form id="login-form" @keyup.enter="submitCredentials">
             <div class="form-group row">
                 <label for="login-email" class="hidden-xs-down col-sm-2 col-form-label">Email</label>
                 <div class="col-xs-12 col-sm-10">
-                    <input type="email" class="form-control" id="login-email" placeholder="Email">
+                    <input type="email" class="form-control" id="login-email" placeholder="Email" v-model="login.email">
                 </div>
             </div>
             <div class="form-group row">
                 <label for="login-password" class="hidden-xs-down col-sm-2 col-form-label">Password</label>
                 <div class="col-xs-12 col-sm-10">
-                    <input type="password" class="form-control" id="login-password" placeholder="Password">
+                    <input type="password" class="form-control" id="login-password" placeholder="Password" v-model="login.password">
                 </div>
             </div>
             <div class="form-group row">
                 <div class="offset-sm-2 col-xs-10">
                     <div class="form-check">
                         <label class="form-check-label">
-                            <input class="form-check-input" type="checkbox" id="login-remember-me"> Remember me
+                            <input class="form-check-input" type="checkbox" id="login-remember-me" v-model="login.rememberMe"> Remember me
                         </label>
                     </div>
                 </div>
             </div>
             <div class="form-group row">
                 <div class="offset-sm-2 col-xs-10">
-                    <a href="#" class="btn btn-primary" id="login-submit">Sign in</a>
+                    <a href="#" class="btn btn-primary" @click.prevent="submitCredentials">Sign in</a>
                 </div>
             </div>
         </form>
     </div>
     <h1 id="sign-up" class="text-xs-center" >Aren't an User yet?</h1>
     <p class="text-xs-center" >Sign up here to get your own tracker for the AT.</p>
-    <form id="register-form">
-        <div class="form-group row" id="register-email-group">
+    <form id="register-form" @keyup.enter="submitSignup">
+        <div class="form-group row" v-bind:class="{ 'has-danger': register.errors.email }">
             <label for="register-email" class="hidden-xs-down col-sm-2 col-form-label">Email</label>
             <div class="col-xs-12 col-sm-10">
-                <input type="email" class="form-control" id="register-email" placeholder="Email">
-                <div class="form-control-feedback hidden-xs-up" id="register-email-error">Please enter a valid email address.</div>
+                <input type="email" class="form-control" id="register-email" placeholder="Email" v-model="register.email" @keyup="checkEmail">
+                <div class="form-control-feedback" v-bind:class="{ 'hidden-xs-up': !register.errors.email }">Please enter a valid email address.</div>
             </div>
         </div>
-        <div class="form-group row" id="register-password-group">
-            <label for="register-password" class="hidden-xs-down col-sm-2 col-form-label">Password</label>
-            <div class="col-xs-12 col-sm-10">
-                <input type="password" class="form-control" id="register-password" placeholder="Password">
-                <div class="form-control-feedback hidden-xs-up" id="register-password-error">Please enter a strong password.</div>
+        <div class="form-group row" v-bind:class="{ 'has-danger': register.errors.password }">
+                <label for="register-password" class="hidden-xs-down col-sm-2 col-form-label">Password</label>
+                <div class="col-xs-12 col-sm-10">
+                    <input type="password" class="form-control" id="register-password" placeholder="Password" v-model="register.password" @keyup="checkPassword">
+                    <div class="form-control-feedback" v-bind:class="{ 'hidden-xs-up': !register.errors.password }">Please enter a strong password.</div>
+                </div>
             </div>
-        </div>
-        <div class="form-group row" id="register-repeat-group">
-            <label for="register-repeat" class="hidden-xs-down col-sm-2 col-form-label">Repeat</label>
-            <div class="col-xs-12 col-sm-10">
-                <input type="password" class="form-control" id="register-repeat" placeholder="Repeat">
-                <div class="form-control-feedback hidden-xs-up" id="register-repeat-error">Sorry, your passwords don't match.</div>
+            <div class="form-group row" v-bind:class="{ 'has-danger': register.errors.repeat }">
+                <label for="register-repeat" class="hidden-xs-down col-sm-2 col-form-label">Repeat</label>
+                <div class="col-xs-12 col-sm-10">
+                    <input type="password" class="form-control" id="register-repeat" placeholder="Repeat" v-model="register.repeat" @keyup="checkRepeat">
+                    <div class="form-control-feedback" v-bind:class="{ 'hidden-xs-up': !register.errors.repeat }">Sorry, your passwords don't match.</div>
+                </div>
             </div>
-        </div>
-        <div class="card card-inverse card-danger text-xs-center hidden-xs-up" id="register-error">
-            <div class="card-block">
-                <p class="card-text" style="color: white;">
-                    <strong>This email is already signed up.</strong>
-                </p>
+            <div class="card card-inverse card-danger text-xs-center" v-bind:class="{ 'hidden-xs-up': !register.errors.duplicate }">
+                <div class="card-block">
+                    <p class="card-text" style="color: white;">
+                        <strong>This email is already signed up.</strong>
+                    </p>
+                </div>
             </div>
-        </div>
-        <div class="form-group row">
-            <div class="offset-sm-2 col-xs-10">
-                <a href="#" class="btn btn-secondary" id="register-submit">Sign Up</a>
+            <div class="form-group row">
+                <div class="offset-sm-2 col-xs-10">
+                    <a href="#" class="btn btn-secondary" @click.prevent="submitSignup">Sign Up</a>
+                </div>
             </div>
-        </div>
     </form>
 </div>
 <script>
 (function() {
     'use strict';
 
-    var loginError = $('#login-error');
-    var loginButton = $('#login-submit');
-    var loginFrom = $('#login-form');
-
-    loginButton.click(submitCredentials);
-    loginFrom.keydown(function(event) {
-        if (event.keyCode == 13) {
-            return submitCredentials();
-        }
-     });
-
-    function submitCredentials(event) {
-        loginError.addClass('hidden-xs-up');
-        $.post(
-            '${env.HEROKU_URL}/api/v1/sessions/',
-            JSON.stringify({
-                email: $('#login-email').val(),
-                password: $('#login-password').val()
-            }),
-            redirect
-        ).fail(errorHandler);
-        return false;
-    }
-
-    function errorHandler(request) {
-        loginError.removeClass('hidden-xs-up');
-        $('#login-password').focus();
-    }
-
-    function redirect(res) {
-        localStorage.removeItem('session-token');
-        sessionStorage.removeItem('session-token');
-
-        var response = JSON.parse(res);
-        var token = response.token;
-        var userId = response['user-id'];
-        var rememberMe = $('#login-remember-me').is(':checked');
-
-        if ( rememberMe ) {
-            localStorage.setItem('session-token', token);
-            localStorage.setItem('user-id', userId);
-        } else {
-            sessionStorage.setItem('session-token', token);
-            sessionStorage.setItem('user-id', userId);
-        }
-
-        var redirect = '${env.HEROKU_URL}/u/manage_trail.html'
-        var params = new URLSearchParams(window.location.search);
-
-        if ( params.has('redirect') ) {
-            redirect = params.get('redirect');
-        }
-
-        window.location.replace(redirect);
-    }
-
-    var registerButton = $('#register-submit');
-    var registerForm = $('#register-form');
-
-    registerButton.click(submitSignup);
-    registerForm.keydown(function(event) {
-        if (event.keyCode == 13) {
-            return submitSignup();
-        }
+    var backend = axios.create({
+        baseURL: '${env.HEROKU_URL}/api/v1/',
     });
 
-    var registerPassword = $('#register-password');
-    var registerRepeat = $('#register-repeat');
+    var app = new Vue({
+        el: '#app',
+        data: {
+            login: {
+                email: '',
+                password: '',
+                rememberMe: false,
+                error: false
+            },
+            register: {
+                email: '',
+                password: '',
+                repeat: '',
+                errors: {
+                    email: false,
+                    password: false,
+                    repeat: false
+                }
+            }
+        },
+        methods: {
+            submitCredentials: function () {
+                this.login.error = false;
 
-    var registerPasswordGroup = $('#register-password-group');
-    var registerPasswordError = $('#register-password-error');
-    var registerRepeatGroup = $('#register-repeat-group');
-    var registerRepeatError = $('#register-repeat-error');
-
-    registerPassword.change(checkPassword);
-    registerRepeat.change(checkPassword);
-
-    function checkPassword() {
-        if ( registerPassword.val().length <= 0 ) {
-            registerPasswordGroup.addClass('has-danger');
-            registerPasswordError.removeClass('hidden-xs-up');
-            return false;
-        } else {
-            registerPasswordGroup.removeClass('has-danger');
-            registerPasswordError.addClass('hidden-xs-up');
-        }
-
-        return registerRepeat.val().length > 0 && checkRepeat();
-    }
-
-    function checkRepeat() {
-        if ( registerPassword.val() !== registerRepeat.val() ) {
-            registerRepeatGroup.addClass('has-danger');
-            registerRepeatError.removeClass('hidden-xs-up');
-            return false;
-        } else {
-            registerRepeatGroup.removeClass('has-danger');
-            registerRepeatError.addClass('hidden-xs-up');
-            return true;
-        }
-    }
-
-    var registerEmail = $('#register-email');
-
-    var registerEmailGroup = $('#register-email-group');
-    var registerEmailError = $('#register-email-error');
-
-    registerEmail.change(checkEmail);
-
-    function checkEmail() {
-        if ( ! /\S+@\S+\.\S+/.test(registerEmail.val()) ) {
-            registerEmailGroup.addClass('has-danger');
-            registerEmailError.removeClass('hidden-xs-up');
-            return false;
-        } else {
-            registerEmailGroup.removeClass('has-danger');
-            registerEmailError.addClass('hidden-xs-up');
-            return true;
-        }
-    }
-
-    function submitSignup() {
-        var emailError = $('#register-error');
-
-        if ( checkEmail() && checkRepeat() && checkPassword() ) {
-            emailError.addClass('hidden-xs-up');
-            $.post(
-                '${env.HEROKU_URL}/api/v1/users/',
-                JSON.stringify({
-                    email: $('#register-email').val(),
-                    password: $('#register-password').val()
+                backend.post('sessions/', {
+                        email: this.login.email,
+                        password: this.login.password
                 })
-            )
-            .done( function() { window.location.replace('${env.HEROKU_URL}/p/signup_success.html'); } )
-            .fail( function() {
-                emailError.removeClass('hidden-xs-up');
-            } );
-        } else {
-            console.log('validation fail');
-        }
-        return false;
-    }
+                .then(() => {
+                    this.clearStorage();
 
+                    var response = JSON.parse(res);
+                    var token = response.token;
+                    var userId = response['user-id'];
+
+                    if ( this.login.rememberMe ) {
+                        localStorage.setItem('session-token', token);
+                        localStorage.setItem('user-id', userId);
+                    } else {
+                        sessionStorage.setItem('session-token', token);
+                        sessionStorage.setItem('user-id', userId);
+                    }
+
+                    this.redirect();
+                })
+                .catch(() => {
+                    this.login.error = true;
+                    document.getElementById('login-password').focus();
+                });
+            },
+            clearStorage: function () {
+                localStorage.removeItem('session-token');
+                sessionStorage.removeItem('session-token');
+
+                localStorage.removeItem('user-id');
+                sessionStorage.removeItem('user-id');
+
+                localStorage.removeItem('google-token');
+            },
+            redirect: function () {
+                var redirect = '${env.HEROKU_URL}/u/manage_trail.html'
+                var params = new URLSearchParams(window.location.search);
+
+                if (params.has('redirect')) {
+                    redirect = params.get('redirect');
+                }
+
+                window.location.replace(redirect);
+            },
+            checkPassword: function () {
+                return this.register.errors.password = this.register.password.length  <= 0;
+            },
+            checkRepeat: function () {
+                return this.register.errors.repeat = this.register.repeat !== this.register.password;
+            },
+            checkEmail: function () {
+                return this.register.errors.email = ! /\S+@\S+\.\S+/.test(this.register.email);
+            },
+            submitSignup: function () {
+                if ( this.checkEmail() || this.checkRepeat() || this.checkPassword() ) {
+                    return;
+                }
+                this.register.errors.duplicate = false;
+                backend.post('users/', {
+                        email: register,
+                        password: $('#register-password').val()
+                })
+                .then(() => {
+                    window.location.replace('${env.HEROKU_URL}/p/signup_success.html');
+                })
+                .catch(() => {
+                    this.register.errors.duplicate = true;
+                });
+            },
+            handleGoogleSuccess: function (googleUser) {
+                this.clearStorage();
+
+                localStorage.setItem('google-token', googleUser.getAuthResponse.id_token);
+                localStorage.setItem('user-id', googleUser.getBasicProfile().getEmail());
+
+                this.redirect();
+            }
+        },
+        mounted: function () {
+            gapi.load('auth2', () => {
+                var auth2 = gapi.auth2.init({client_id: '1071345134266-5s1v1hqhn8ao690jrp89j6r24l57bggs.apps.googleusercontent.com'})
+                auth2.attachClickHandler(
+                    document.getElementById('login-google'),
+                    {},
+                    this.handleGoogleSuccess,
+                    (error) => console.log(error)
+                );
+            });
+        }
+    })
 })();
 
 </script>
