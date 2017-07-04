@@ -172,12 +172,11 @@ body {
                         email: this.login.email,
                         password: this.login.password
                 })
-                .then(() => {
+                .then((res) => {
                     this.clearStorage();
 
-                    var response = JSON.parse(res);
-                    var token = response.token;
-                    var userId = response['user-id'];
+                    var token = res.data.token;
+                    var userId = res.data['user-id'];
 
                     if ( this.login.rememberMe ) {
                         localStorage.setItem('session-token', token);
@@ -228,8 +227,8 @@ body {
                 }
                 this.register.errors.duplicate = false;
                 backend.post('users/', {
-                        email: register,
-                        password: $('#register-password').val()
+                        email: this.register.email,
+                        password: this.register.password
                 })
                 .then(() => {
                     window.location.replace('${env.HEROKU_URL}/p/signup_success.html');
@@ -239,12 +238,21 @@ body {
                 });
             },
             handleGoogleSuccess: function (googleUser) {
-                this.clearStorage();
+                backend.post('sessions/', {
+                    email: googleUser.getBasicProfile().getEmail(),
+                    'google-token': googleUser.getAuthResponse().id_token
+                })
+                .then((res) => {
+                    this.clearStorage();
 
-                localStorage.setItem('google-token', googleUser.getAuthResponse.id_token);
-                localStorage.setItem('user-id', googleUser.getBasicProfile().getEmail());
+                    var token = res.data.token;
+                    var userId = res.data['user-id'];
 
-                this.redirect();
+                    localStorage.setItem('session-token', token);
+                    localStorage.setItem('user-id', userId);
+
+                    this.redirect();
+                });
             }
         },
         mounted: function () {

@@ -6,8 +6,9 @@
     <link rel="icon" type="image/ico" href="/r/favicon-map.ico">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/js/bootstrap.min.js" integrity="sha384-BLiI7JTZm+JWlgKa0M0kGRpJbF2J8q+qreVrKBC47e3K6BW78kGLrCkeRX6I9RoK" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@2.3.4/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/axios@0.16.2/dist/axios.min.js"></script>
+    <script src="/r/common.js"></script>
     <style type="text/css">
 body {
     padding-top: 1.5rem;
@@ -15,6 +16,7 @@ body {
 }
 
 .header {
+
     margin-bottom: 2rem;
 
     padding-right: 0;
@@ -33,7 +35,7 @@ body {
     </style>
 </head>
 <body>
-<div class="container">
+<div id="app" class="container">
     <div class="header clearfix">
         <nav>
             <ul class="nav nav-pills float-xs-right">
@@ -47,8 +49,7 @@ body {
                     <a class="nav-link" href="#">Contact</a>
                 </li>
                 <li class="nav-item">
-                    <a id="login" class="btn btn-secondary" href="/p/login.html"><i class="fa fa-sign-in" aria-hidden="true"></i> Login</a>
-                    <a id="logout" class="btn btn-secondary hidden-xs-up" href="#">Logout <i class="fa fa-sign-out" aria-hidden="true"></i></a>
+                    <login-button></login-button>
                 </li>
             </ul>
         </nav>
@@ -163,32 +164,9 @@ body {
 (function() {
     'use strict';
 
-    var sessionToken = sessionStorage.getItem('session-token') || localStorage.getItem('session-token');
-
-    if ( sessionToken ) {
-        $('#login').addClass('hidden-xs-up');
-        $('#logout').removeClass('hidden-xs-up');
-    }
-
-    function logout() {
-        localStorage.removeItem('session-token');
-        sessionStorage.removeItem('session-token');
-
-        $.ajax({
-            url: '${env.HEROKU_URL}/api/v1/sessions/' + sessionToken,
-            type: 'DELETE',
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader('Authorization', sessionToken);
-            },
-
-        }).always(function() {
-            window.location.reload();
-        });
-        return false;
-    }
-
-    $('#logout').click(logout);
-
+    var app = new Vue({
+        el: '#app'
+    });
 })();
     </script>
 </body>
