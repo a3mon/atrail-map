@@ -6,8 +6,9 @@
     <link rel="icon" type="image/ico" href="/r/favicon-map.ico">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/js/bootstrap.min.js" integrity="sha384-BLiI7JTZm+JWlgKa0M0kGRpJbF2J8q+qreVrKBC47e3K6BW78kGLrCkeRX6I9RoK" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@2.3.4/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/axios@0.16.2/dist/axios.min.js"></script>
+    <script src="/r/common.js"></script>
     <style type="text/css">
 body {
     padding-top: 1.5rem;
@@ -25,7 +26,7 @@ body {
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="app">
         <div class="header clearfix">
             <nav>
                 <ul class="nav nav-pills float-xs-right">
@@ -39,7 +40,7 @@ body {
                         <a class="nav-link" href="#">Contact</a>
                     </li>
                     <li class="nav-item">
-                        <a id="logout" class="btn btn-secondary" href="#">Logout <i class="fa fa-sign-out" aria-hidden="true"></i></a>
+                        <login-button login-required="true" @user-identified="userIdentified"></login-button>
                     </li>
                 </ul>
             </nav>
@@ -48,7 +49,9 @@ body {
         <h1>Manage your Progress</h1>
 
         <div class="form-group">
-            <select id="shelter-menu" name="shelter-menu" class="form-control" aria-describedby="shelter-help" ></select>
+            <select name="shelter-menu" class="form-control" aria-describedby="shelter-help" v-model="currentShelter" @change="changeShelter">
+                <option v-for="shelter in shelters" :value="shelter.id">{{ shelter.name }}</option>
+            </select>
             <p id="shelter-help" class="form-text text-muted">Choose the shelter you passed last.</p>
         </div>
 
@@ -72,11 +75,11 @@ body {
                     <div class="col-md-6 col-sm-6">
                         <p>Copy the following code into your site to embed the left map.</p>
                         <p>
-                            <button id="copy-button" type="button" class="btn btn-default">
+                            <button type="button" class="btn btn-default" @click="copyToClipboard">
                                 <i class="fa fa-clipboard" aria-hidden="true"></i> Copy to Clipboard
                             </button>
                         </p>
-                        <textarea id="map-source" rows="5" class="form-control"></textarea>
+                        <textarea id="map-source" rows="5" class="form-control" v-model="mapSource"></textarea>
                     </div>
                 </div>
             </div>
@@ -86,93 +89,67 @@ body {
 (function() {
     'use strict';
 
-    var sessionToken = sessionStorage.getItem('session-token') || localStorage.getItem('session-token');
-
-    if ( ! sessionToken ) {
-        window.location.replace('${env.HEROKU_URL}/p/login.html');
-    }
-
-    var userId = sessionStorage.getItem('user-id') || localStorage.getItem('user-id');
-
-    var menu = $('#shelter-menu');
-    var copy = $('#copy-button');
-    var mapSource = $('#map-source');
-    var map = $('#atrail-map');
-
-    var url = map.attr('src');
-    map.attr('src', url + '?user-id=' + userId);
-    mapSource.val(map[0].outerHTML)
-
-    function reloadMap() {
-        $( '#atrail-map' ).attr( 'src', function ( i, val ) { return val; });
-    }
-
-    menu.change(function(event) {
-        $.ajax({
-            url: '${env.HEROKU_URL}/api/v1/shelters/last',
-            type: "POST",
-            contentType: 'application/json; charset=utf-8',
-            data: JSON.stringify({
-                id: $(event.target).val()
-            }),
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader('Authorization', sessionToken);
+    var app = new Vue({
+        el: '#app',
+        data: {
+            backend: {},
+            userId: 0,
+            mapSource: '',
+            currentShelter: 0,
+            shelters: []
+        },
+        methods: {
+            changeShelter: function () {
+                this.backend.post('shelters/last', {
+                    id: this.currentShelter
+                })
+                .then(this.reloadMap)
+                .catch(this.errorHandler);
             },
-            success: reloadMap
-        }).fail(errorHandler);
-    });
+            reloadMap: function () {
+                document.getElementById('atrail-map').contentWindow.location.reload();
+            },
+            errorHandler: function (res) {
+                if ( res.status === 401 ) {
+                    window.location.replace(res.data.login);
+                } else {
+                    alert( res.statusText );
+                }
+            },
+            copyToClipboard: function() {
+                var mapSource = document.getElementById('map-source')
+                mapSource.focus();
+                mapSource.select();
+                document.execCommand("copy");
+            },
+            userIdentified: function(userId, backend) {
+                this.userId = userId;
+                this.backend = backend;
 
-    copy.click(function(event) {
-        mapSource.focus();
-        mapSource.select();
-        document.execCommand("copy");
-    });
+                this.initShelterMenu();
+            },
+            initShelterMenu: function() {
+                axios.all([
+                    this.backend.get('shelters/'),
+                    this.backend.get('shelters/last', { params: {'user-id': this.userId} })
+                ])
+                .then(axios.spread((shelters, currentShelter) => {
+                    this.shelters = shelters.data;
+                    this.currentShelter = currentShelter.data.id;
+                }))
+                .catch(this.errorHandler);
+            }
+        },
+        mounted: function() {
+            /* Init map with userId */
+            var map = document.getElementById('atrail-map');
+            map.src += '?user-id=' + this.userId;
 
-    function getShelters() {
-        return $.getJSON('${env.HEROKU_URL}/api/v1/shelters/', function(shelters) {
-            $.each(shelters, function(i, shelter) {
-                menu.append($('<option value="' + shelter.id + '">' + shelter.name + '</option>'));
-            });
-        });
-    }
-
-    function getCurrentShelter() {
-        return $.getJSON('${env.HEROKU_URL}/api/v1/shelters/last?user-id=' + userId, function(currentShelter) {
-            menu.val(currentShelter.id);
-        });
-    }
-
-    function errorHandler(request) {
-        var resp = request.responseJSON || JSON.parse(request.responseText);
-        if ( request.status === 401 ) {
-            window.location.replace(resp.login);
-        } else {
-            alert( request.statusText );
+            /* Init textarea with source */
+            this.mapSource = map.outerHTML;
         }
-    }
+    });
 
-    function logout() {
-        localStorage.removeItem('session-token');
-        sessionStorage.removeItem('session-token');
-
-        $.ajax({
-            url: '${env.HEROKU_URL}/api/v1/sessions/' + sessionToken,
-            type: 'DELETE',
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader('Authorization', sessionToken);
-            },
-
-        }).always(function() {
-            window.location.reload();
-        });
-        return false;
-    }
-
-    $('#logout').click(logout);
-
-    getShelters()
-    .then(getCurrentShelter)
-    .fail(errorHandler);
 })();
     </script>
 </body>
