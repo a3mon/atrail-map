@@ -1,8 +1,13 @@
 package com.d3vmoon.at.service;
 
+import com.d3vmoon.at.db.enums.AtAuthenticationType;
 import com.d3vmoon.at.db.enums.AtRole;
 import com.d3vmoon.at.service.pojo.Confirmation;
 import com.d3vmoon.at.service.pojo.Credentials;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.common.collect.ImmutableMap;
 import com.sendgrid.*;
 import org.jooq.Record1;
@@ -16,6 +21,7 @@ import spark.Response;
 import spark.Spark;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,7 +31,6 @@ import static com.d3vmoon.at.service.http.Path.*;
 import static org.jooq.impl.DSL.*;
 
 public class SecurityService extends AbstractService {
-
 
     static final String PARAM_USER_ID = "user-id";
     static final String HEROKU_URL = System.getenv("HEROKU_URL");
@@ -72,28 +77,65 @@ public class SecurityService extends AbstractService {
 
     public Object login(Request req, Response resp) {
         final Credentials credentials = gson.fromJson(req.body(), Credentials.class);
+        final int userId;
 
-        final Optional<Record2<Integer, String>> record = ctx.select(AT_USER.ID, AT_USER.PASSWORD)
-                .from(AT_USER)
-                .where(lower(AT_USER.EMAIL).eq(lower(credentials.email)))
-                .fetchOptional();
+        if (credentials.isEmailRequest()) {
+            final Optional<Record2<Integer, String>> record = ctx.select(AT_USER.ID, AT_USER.PASSWORD)
+                    .from(AT_USER)
+                    .where(lower(AT_USER.EMAIL).eq(lower(credentials.email)))
+                    .fetchOptional();
 
-        if ( ! record.isPresent() ) {
+            if (!record.isPresent()) {
+                resp.status(401);
+                return new CouldNotAuthenticateResponse();
+            }
+
+            final boolean isAuthenticated = BCrypt.checkpw(
+                    credentials.password,
+                    record.get().get(AT_USER.PASSWORD)
+            );
+
+            if (!isAuthenticated) {
+                resp.status(401);
+                return new CouldNotAuthenticateResponse();
+            }
+            userId = record.get().get(AT_USER.ID);
+        } else if (credentials.isGoogleRequst()) {
+            try {
+                final GoogleIdToken token = new GoogleIdTokenVerifier(
+                        GoogleNetHttpTransport.newTrustedTransport(),
+                        JacksonFactory.getDefaultInstance()
+                ).verify(credentials.googleToken);
+
+                if (token == null) {
+                    resp.status(401);
+                    return new CouldNotAuthenticateResponse();
+                }
+
+                final Optional<Record1<Integer>> record = ctx.select(AT_USER.ID)
+                        .from(AT_USER)
+                        .where(lower(AT_USER.EMAIL).eq(lower(token.getPayload().getEmail())))
+                        .fetchOptional();
+
+                if (!record.isPresent()) {
+                    userId = ctx.insertInto(AT_USER).columns(AT_USER.EMAIL, AT_USER.PASSWORD, AT_USER.ROLE, AT_USER.AUTHENTICATION_TYPE)
+                            .values(token.getPayload().getEmail(), credentials.googleToken, AtRole.user, AtAuthenticationType.google)
+                            .returning(AT_USER.ID)
+                            .fetchOne()
+                            .get(AT_USER.ID);
+                } else {
+                    userId = record.get().get(AT_USER.ID);
+                }
+            } catch (GeneralSecurityException | IOException e) {
+                LOGGER.error(e.getMessage(), e);
+                resp.status(401);
+                return new CouldNotAuthenticateResponse();
+            }
+        } else {
             resp.status(401);
             return new CouldNotAuthenticateResponse();
         }
 
-        final boolean isAuthenticated = BCrypt.checkpw(
-                credentials.password,
-                record.get().get(AT_USER.PASSWORD)
-        );
-
-        if ( ! isAuthenticated ) {
-            resp.status(401);
-            return new CouldNotAuthenticateResponse();
-        }
-
-        final int userId = record.get().get(AT_USER.ID);
         final UUID token = UUID.randomUUID();
 
         final boolean updateSession = ctx.fetchExists(

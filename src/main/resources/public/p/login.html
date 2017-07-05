@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
     <script src="https://unpkg.com/vue@2.3.4/dist/vue.min.js"></script>
     <script src="https://unpkg.com/axios@0.16.2/dist/axios.min.js"></script>
-    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <script src="https://apis.google.com/js/platform.js"></script>
     <style type="text/css">
 body {
     padding-top: 1.5rem;
@@ -240,7 +240,7 @@ body {
             handleGoogleSuccess: function (googleUser) {
                 backend.post('sessions/', {
                     email: googleUser.getBasicProfile().getEmail(),
-                    'google-token': googleUser.getAuthResponse().id_token
+                    googleToken: googleUser.getAuthResponse().id_token
                 })
                 .then((res) => {
                     this.clearStorage();
