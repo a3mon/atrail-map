@@ -8,6 +8,8 @@ public class Path {
     public static final String CURRENT_TRAIL = API_BASE + "currentTrail";
     public static final String SHELTERS = API_BASE + "shelters/";
 
+    public static final String PREFERENCES = API_BASE + "preferences/";
+
     public static final String SESSIONS = API_BASE + "sessions/";
     public static final String USERS = API_BASE + "users/";
 

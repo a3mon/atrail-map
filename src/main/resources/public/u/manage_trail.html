@@ -23,6 +23,10 @@ body {
     padding-bottom: 1rem;
     border-bottom: .05rem solid #e5e5e5;
 }
+
+#preferences {
+    margin-top: 1rem;
+}
     </style>
 </head>
 <body>
@@ -56,34 +60,58 @@ body {
         </div>
 
         <h2>Embed your Map</h2>
-        <div class="panel panel-default">
-            <div class="panel-body">
-                <div class="row">
-                    <div class="col-md-6 col-sm-6">
-                        <iframe id="atrail-map"
-                                name="Appalachian Trail Map"
-                                title="Appalachian Trail Map"
-                                width="300"
-                                height="300"
-                                frameborder="0"
-                                scrolling="no"
-                                marginheight="0"
-                                marginwidth="0"
-                                src="${env.HEROKU_URL}/p/at_map.html">
-                        </iframe>
-                    </div>
-                    <div class="col-md-6 col-sm-6">
-                        <p>Copy the following code into your site to embed the left map.</p>
-                        <p>
-                            <button type="button" class="btn btn-default" @click="copyToClipboard">
-                                <i class="fa fa-clipboard" aria-hidden="true"></i> Copy to Clipboard
-                            </button>
-                        </p>
-                        <textarea id="map-source" rows="5" class="form-control" v-model="mapSource"></textarea>
-                    </div>
-                </div>
+        <div class="row">
+            <div class="col-md-6 col-sm-6">
+                <iframe id="atrail-map"
+                        name="Appalachian Trail Map"
+                        title="Appalachian Trail Map"
+                        width="300"
+                        height="300"
+                        frameborder="0"
+                        scrolling="no"
+                        marginheight="0"
+                        marginwidth="0"
+                        :src="mapLink">
+                </iframe><br />
+                <a :href="mapLink" target="_blank" class="btn btn-secondary" role="button">
+                    <i class="fa fa-arrows-alt" aria-hidden="true"></i> fullscreen
+                </a>
+
+            </div>
+            <div class="col-md-6 col-sm-6">
+                <p>Copy the following code into your site to embed the left map.</p>
+                <p>
+                    <button type="button" class="btn btn-secondary" @click="copyToClipboard">
+                        <i class="fa fa-clipboard" aria-hidden="true"></i> Copy to Clipboard
+                    </button>
+                </p>
+                <textarea id="map-source" rows="5" class="form-control" v-model="mapSource"></textarea>
             </div>
         </div>
+
+        <h2 id="preferences">Preferences</h2>
+        <form>
+            <div class="form-group row">
+                <label for="direction" class="hidden-xs-down col-sm-2 col-form-label">Direction</label>
+                <div id="direction" class="btn-group col-xs-12 col-sm-10" role="group" aria-label="Direction">
+                    <button type="button" class="btn" v-bind:class="{ 'btn-primary': isNobo, 'btn-secondary': !isNobo }" @click="setNobo">Nobo</button>
+                    <button type="button" class="btn" v-bind:class="{ 'btn-primary': isSobo, 'btn-secondary': !isSobo }" @click="setSobo">Sobo</button>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="start" class="hidden-xs-down col-sm-2 col-form-label">Start Date</label>
+                <div class="col-xs-12 col-sm-10">
+                    <input id="start" type="date" class="form-control" v-model="preferences.start" @change="sendPreferences">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="end" class="hidden-xs-down col-sm-2 col-form-label">End Date</label>
+                <div class="col-xs-12 col-sm-10">
+                    <input id="end" type="date" class="form-control" v-model="preferences.end" @change="sendPreferences">
+                </div>
+            </div>
+        </form>
+
     </div>
     <script>
 (function() {
@@ -94,9 +122,19 @@ body {
         data: {
             backend: {},
             userId: 0,
-            mapSource: '',
             currentShelter: 0,
-            shelters: []
+            shelters: [],
+            mapSource: '',
+            preferences: {
+                direction: 'nobo',
+                start: (new Date()).toISOString().split('T')[0],
+                end: (new Date()).toISOString().split('T')[0]
+            }
+        },
+        computed: {
+            mapLink: function() { return '${env.HEROKU_URL}/p/at_map.html?user-id=' + this.userId; },
+            isNobo: function () { return 'nobo' === this.preferences.direction; },
+            isSobo: function () { return 'sobo' === this.preferences.direction; }
         },
         methods: {
             changeShelter: function () {
@@ -131,22 +169,58 @@ body {
             initShelterMenu: function() {
                 axios.all([
                     this.backend.get('shelters/'),
-                    this.backend.get('shelters/last', { params: {'user-id': this.userId} })
+                    this.backend.get('shelters/last', { params: {'user-id': this.userId} }),
+                    this.backend.get('preferences/' + this.userId )
                 ])
-                .then(axios.spread((shelters, currentShelter) => {
+                .then(axios.spread((shelters, currentShelter, preferences) => {
                     this.shelters = shelters.data;
                     this.currentShelter = currentShelter.data.id;
+
+                    this.preferences.direction = preferences.data.direction;
+                    this.preferences.start = this.formatDate(preferences.data.start);
+                    this.preferences.end = this.formatDate(preferences.data.end);
                 }))
                 .catch(this.errorHandler);
+            },
+            setNobo: function() {
+                this.preferences.direction = 'nobo';
+                this.sendPreferences();
+            },
+            setSobo: function() {
+                this.preferences.direction = 'sobo';
+                this.sendPreferences();
+            },
+            sendPreferences: function() {
+                console.log("send preferences");
+                this.backend.post('preferences/' + this.userId, {
+                    direction: this.preferences.direction,
+                    start: this.getDate(this.preferences.start),
+                    end: this.getDate(this.preferences.end)
+                })
+                .then(this.reloadMap)
+                .catch(this.errorHandler);
+            },
+            formatDate: function(jsonDate) {
+                var month = '' + jsonDate.month,
+                    day = '' + jsonDate.day,
+                    year = jsonDate.year;
+
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+
+                return [year, month, day].join('-');
+            },
+            getDate: function(stringDate) {
+                var parts = stringDate.split('-');
+                return {
+                    year: Number(parts[0]),
+                    month: Number(parts[1]),
+                    day: Number(parts[2])
+                }
             }
         },
         mounted: function() {
-            /* Init map with userId */
-            var map = document.getElementById('atrail-map');
-            map.src += '?user-id=' + this.userId;
-
-            /* Init textarea with source */
-            this.mapSource = map.outerHTML;
+            this.mapSource = document.getElementById('atrail-map').outerHTML;
         }
     });
 

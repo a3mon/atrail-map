@@ -1,6 +1,7 @@
 package com.d3vmoon.at;
 
 import com.d3vmoon.at.service.ATService;
+import com.d3vmoon.at.service.PreferenceService;
 import com.d3vmoon.at.service.SecurityService;
 import com.d3vmoon.at.service.ShelterService;
 import com.google.gson.Gson;
@@ -19,9 +20,9 @@ public class Main {
 
     private final ShelterService shelterService = new ShelterService();
     private final SecurityService securityService = new SecurityService();
+    private final PreferenceService preferenceService = new PreferenceService();
 
     public static void main(String[] args)  {
-
         new Main().init();
     }
 
@@ -43,6 +44,9 @@ public class Main {
         get(SHELTERS, shelterService::getShelters, gson::toJson);
         get(SHELTERS + PARAM_ID, shelterService::getShelter, gson::toJson);
         post(SHELTERS + PARAM_ID, shelterService::setShelter);
+
+        get(PREFERENCES + PARAM_ID, preferenceService::getPreferences, gson::toJson);
+        post(PREFERENCES + PARAM_ID, preferenceService::setPreferences);
 
         redirect.any("/", "/u/manage_trail.html");
 

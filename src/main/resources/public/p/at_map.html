@@ -6,57 +6,67 @@
     <title>AT Map</title>
     <link rel="icon" type="image/ico" href="/r/favicon-map.ico">
     <style>
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-      }
-      #map {
-        height: 100%;
-      }
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+#map {
+    height: 100%;
+}
     </style>
 </head>
 <body>
 <div id="map"></div>
-<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/axios@0.16.2/dist/axios.min.js"></script>
 <script>
 function initMap() {
-  var userId = (function (name, url) {
-    name = name.replace(/[\[\]]/g, "\\$&");
-    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-        results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, " "));
+    var userId = (function (name, url) {
+        name = name.replace(/[\[\]]/g, "\\$&");
+        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, " "));
 
-  })('user-id', window.location.href);
+    })('user-id', window.location.href);
 
-  $.getJSON('${env.HEROKU_URL}/api/v1/currentTrail?user-id=' + userId, function(points) {
-    var map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 7,
-        center: points[points.length - 1],
-        mapTypeId: google.maps.MapTypeId.TERRAIN
-    });
-    new google.maps.Marker({
-        position: {lat:34.626688, lng:-84.193892},
-        title: 'Springer Mountain',
-        map: map
-    });
-    new google.maps.Marker({
-        position: {lat:45.90424, lng:-68.921152},
-        title: 'Mount Katahdin',
-        map: map
-    });
-    var trail = new google.maps.Polyline({
-        path: points,
-        geodesic: true,
-        strokeColor: '#FF0000',
-        strokeOpacity: 1.0,
-        strokeWeight: 2,
-        map: map
+    var backend = axios.create({
+        baseURL: '${env.HEROKU_URL}/api/v1/'
     });
 
-  })
+    axios.all([
+        backend.get('currentTrail?user-id=' + userId),
+        backend.get('preferences/' + userId)
+    ])
+    .then(axios.spread(function(trail, prefs) {
+        var points = trail.data;
+        var center = prefs.data.direction === 'nobo' ? points[points.length - 1] : points[0];
+
+        var map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 7,
+            center: center,
+            mapTypeId: google.maps.MapTypeId.TERRAIN
+        });
+        new google.maps.Marker({
+            position: {lat:34.626688, lng:-84.193892},
+            title: 'Springer Mountain',
+            map: map
+        });
+        new google.maps.Marker({
+            position: {lat:45.90424, lng:-68.921152},
+            title: 'Mount Katahdin',
+            map: map
+        });
+        var trail = new google.maps.Polyline({
+            path: points,
+            geodesic: true,
+            strokeColor: '#FF0000',
+            strokeOpacity: 1.0,
+            strokeWeight: 2,
+            map: map
+        });
+    }));
 }
 </script>
 <script async defer
