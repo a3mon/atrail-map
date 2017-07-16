@@ -1,6 +1,6 @@
 package com.d3vmoon.at.service;
 
-import com.d3vmoon.at.db.tables.records.AtShelterRecord;
+import com.d3vmoon.at.db.tables.records.AtPoiRecord;
 import com.d3vmoon.at.service.http.NotFoundException;
 import com.d3vmoon.at.service.pojo.Shelter;
 import com.google.common.primitives.Ints;
@@ -14,23 +14,23 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.d3vmoon.at.db.Tables.AT_LAST_SHELTER;
-import static com.d3vmoon.at.db.Tables.AT_SHELTER;
+import static com.d3vmoon.at.db.Tables.AT_POI;
 import static com.d3vmoon.at.service.SecurityService.PARAM_USER_ID;
 import static com.d3vmoon.at.service.http.Path.PARAM_ID;
 
 public class ShelterService extends AbstractService {
 
-    private static final RecordMapper<AtShelterRecord, Shelter> RECORD_MAPPER = r -> new Shelter(
+    private static final RecordMapper<AtPoiRecord, Shelter> RECORD_MAPPER = r -> new Shelter(
             r.getId(),
             r.getName(),
             (PGpoint) r.getPoint(),
             r.getComment(),
-            r.getCampground()
+            Optional.ofNullable(r.getCampground()).orElse(Boolean.FALSE)
     );
 
     public List<Shelter> getShelters(Request req, Response resp) {
         return ctx
-                .selectFrom(AT_SHELTER)
+                .selectFrom(AT_POI)
                 .orderBy(DSL.field("point[0]"))
                 .fetch()
                 .map(RECORD_MAPPER);
@@ -41,8 +41,8 @@ public class ShelterService extends AbstractService {
         if ("last".equalsIgnoreCase(idParam)) {
             final int userId = Integer.parseInt(req.queryParams(PARAM_USER_ID));
             return ctx
-                    .selectFrom(AT_SHELTER)
-                    .where(AT_SHELTER.ID.eq(ctx
+                    .selectFrom(AT_POI)
+                    .where(AT_POI.ID.eq(ctx
                             .select(AT_LAST_SHELTER.AT_SHELTER)
                             .from(AT_LAST_SHELTER)
                             .where(AT_LAST_SHELTER.AT_USER.eq(userId)))
@@ -51,8 +51,8 @@ public class ShelterService extends AbstractService {
         } else {
             final Integer id = Optional.ofNullable(Ints.tryParse(idParam)).orElseThrow(() -> new NotFoundException(req.pathInfo()));
             return ctx
-                    .selectFrom(AT_SHELTER)
-                    .where(AT_SHELTER.ID.eq(id)).fetch()
+                    .selectFrom(AT_POI)
+                    .where(AT_POI.ID.eq(id)).fetch()
                     .map(RECORD_MAPPER).get(0);
         }
     }

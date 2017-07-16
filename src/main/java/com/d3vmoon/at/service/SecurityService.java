@@ -201,7 +201,7 @@ public class SecurityService extends AbstractService {
                 .fetchOne()
                 .get(AT_USER.ID);
 
-        final int shelter = ctx.select(min(AT_SHELTER.ID)).from(AT_SHELTER).fetchOne().value1();
+        final int shelter = ctx.select(min(AT_POI.ID)).from(AT_POI).fetchOne().value1();
 
         ctx.insertInto(AT_LAST_SHELTER, AT_LAST_SHELTER.AT_USER, AT_LAST_SHELTER.AT_SHELTER)
                 .values(userId, shelter)

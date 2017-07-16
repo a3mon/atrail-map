@@ -151,7 +151,7 @@ body {
                 if ( res.status === 401 ) {
                     window.location.replace(res.data.login);
                 } else {
-                    alert( res.statusText );
+                    alert( res.message );
                 }
             },
             copyToClipboard: function() {
