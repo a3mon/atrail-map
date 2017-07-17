@@ -2,7 +2,7 @@
 
 Vue.component('login-button', {
     template: '<a class="btn btn-secondary" href="/p/login.html" v-if="!isLoggedIn"><i class="fa fa-sign-in" aria-hidden="true"></i> Login</a>' +
-              '<a class="btn btn-secondary" href="#" @click.prevent="logout" v-else>Logout <i class="fa fa-sign-out" aria-hidden="true"></i></a>',
+              '<a class="btn btn-secondary" href="#" :title="welcome" @click.prevent="logout" v-else>Logout <i class="fa fa-sign-out" aria-hidden="true"></i></a>',
     props: {
         loginRequired: {
             type: Boolean,
@@ -22,6 +22,9 @@ Vue.component('login-button', {
     computed: {
       isLoggedIn: function () {
           return this.sessionToken && this.sessionToken.length > 0;
+      },
+      welcome: function () {
+          return 'You are logged in as ' + this.userId;
       }
     },
     methods: {

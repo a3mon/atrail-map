@@ -18,6 +18,7 @@ public class Main {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
+    private final ATService atService = new ATService();
     private final ShelterService shelterService = new ShelterService();
     private final SecurityService securityService = new SecurityService();
     private final PreferenceService preferenceService = new PreferenceService();
@@ -39,7 +40,8 @@ public class Main {
 
         post(CONFIRMATIONS, securityService::confirm, gson::toJson);
 
-        get(CURRENT_TRAIL, new ATService()::getCurrentTrail, gson::toJson);
+        get(TRAIL, atService::getFullTrail, gson::toJson);
+        get(TRAIL + PARAM_ID, atService::getUserTrail, gson::toJson);
 
         get(SHELTERS, shelterService::getShelters, gson::toJson);
         get(SHELTERS + PARAM_ID, shelterService::getShelter, gson::toJson);

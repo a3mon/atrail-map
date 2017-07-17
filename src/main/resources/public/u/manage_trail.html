@@ -99,6 +99,13 @@ body {
                 </div>
             </div>
             <div class="form-group row">
+                <label for="showFullTrail" class="hidden-xs-down col-sm-2 col-form-label">Show Full Trail</label>
+                <div id="showFullTrail" class="btn-group col-xs-12 col-sm-10" role="group" aria-label="Direction">
+                    <button type="button" class="btn" v-bind:class="{ 'btn-primary': !preferences.showFullTrail, 'btn-secondary': preferences.showFullTrail }" @click="toggleShowFullTrail">No</button>
+                    <button type="button" class="btn" v-bind:class="{ 'btn-primary': preferences.showFullTrail, 'btn-secondary': !preferences.showFullTrail }" @click="toggleShowFullTrail">Yes</button>
+                </div>
+            </div>
+            <div class="form-group row">
                 <label for="start" class="hidden-xs-down col-sm-2 col-form-label">Start Date</label>
                 <div class="col-xs-12 col-sm-10">
                     <input id="start" type="date" class="form-control" v-model="preferences.start" @change="sendPreferences">
@@ -127,6 +134,7 @@ body {
             mapSource: '',
             preferences: {
                 direction: 'nobo',
+                showFullTrail: false,
                 start: (new Date()).toISOString().split('T')[0],
                 end: (new Date()).toISOString().split('T')[0]
             }
@@ -177,6 +185,7 @@ body {
                     this.currentShelter = currentShelter.data.id;
 
                     this.preferences.direction = preferences.data.direction;
+                    this.preferences.showFullTrail = preferences.data.showFullTrail;
                     this.preferences.start = this.formatDate(preferences.data.start);
                     this.preferences.end = this.formatDate(preferences.data.end);
                 }))
@@ -190,12 +199,16 @@ body {
                 this.preferences.direction = 'sobo';
                 this.sendPreferences();
             },
+            toggleShowFullTrail: function() {
+                this.preferences.showFullTrail = ! this.preferences.showFullTrail;
+                this.sendPreferences();
+            },
             sendPreferences: function() {
-                console.log("send preferences");
                 this.backend.post('preferences/' + this.userId, {
                     direction: this.preferences.direction,
                     start: this.getDate(this.preferences.start),
-                    end: this.getDate(this.preferences.end)
+                    end: this.getDate(this.preferences.end),
+                    showFullTrail: this.preferences.showFullTrail
                 })
                 .then(this.reloadMap)
                 .catch(this.errorHandler);

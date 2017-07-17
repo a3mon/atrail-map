@@ -35,38 +35,62 @@ function initMap() {
         baseURL: '${env.HEROKU_URL}/api/v1/'
     });
 
-    axios.all([
-        backend.get('currentTrail?user-id=' + userId),
-        backend.get('preferences/' + userId)
-    ])
-    .then(axios.spread(function(trail, prefs) {
-        var points = trail.data;
-        var center = prefs.data.direction === 'nobo' ? points[points.length - 1] : points[0];
+    var map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 7,
+        mapTypeId: google.maps.MapTypeId.TERRAIN
+    });
 
-        var map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 7,
-            center: center,
-            mapTypeId: google.maps.MapTypeId.TERRAIN
-        });
+    backend.get('trail/' + userId)
+    .then(function(resp) {
+        var index = resp.data.currentIndex;
+        var fullTrail = resp.data.trail;
+
+        var currentTrail = resp.data.direction === 'nobo' ? fullTrail.slice(0, index) : fullTrail.slice(index - 1);
+        var restOfTrail = resp.data.direction === 'nobo' ? fullTrail.slice(index - 1) : fullTrail.slice(0, index);
+        var center = fullTrail[index];
+
+        map.setCenter(center);
+
         new google.maps.Marker({
             position: {lat:34.626688, lng:-84.193892},
             title: 'Springer Mountain',
+            label: {
+                color: '#FFFFFF',
+                fontWeight: 'bold',
+                text: 'S'
+            },
             map: map
         });
         new google.maps.Marker({
             position: {lat:45.90424, lng:-68.921152},
             title: 'Mount Katahdin',
+            label: {
+                color: '#FFFFFF',
+                fontWeight: 'bold',
+                text: 'K'
+            },
             map: map
         });
-        var trail = new google.maps.Polyline({
-            path: points,
+        new google.maps.Polyline({
+            path: currentTrail,
             geodesic: true,
             strokeColor: '#FF0000',
             strokeOpacity: 1.0,
             strokeWeight: 2,
             map: map
         });
-    }));
+
+        if (resp.data.showFullTrail) {
+            new google.maps.Polyline({
+                path: restOfTrail,
+                geodesic: true,
+                strokeColor: '#888888',
+                strokeOpacity: 1.0,
+                strokeWeight: 2,
+                map: map
+            });
+        }
+    });
 }
 </script>
 <script async defer

@@ -11,12 +11,14 @@ public class Preferences {
     public final AtDirection direction;
     public final LocalDate start;
     public final LocalDate end;
+    public final boolean showFullTrail;
 
-    public Preferences(int id, int user, AtDirection direction, LocalDate start, LocalDate end) {
+    public Preferences(int id, int user, AtDirection direction, LocalDate start, LocalDate end, boolean showFullTrail) {
         this.id = id;
         this.user = user;
         this.direction = direction;
         this.start = start;
         this.end = end;
+        this.showFullTrail = showFullTrail;
     }
 }
