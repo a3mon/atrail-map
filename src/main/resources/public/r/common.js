@@ -62,3 +62,48 @@ Vue.component('login-button', {
         }
     }
 });
+
+Vue.component('toggle-button', {
+    template:   '<div class="btn-group" role="group">' +
+                    '<button type="button" class="btn" :class="leftClass" @click="setLeft">{{labels.left}}</button>' +
+                    '<button type="button" class="btn" :class="rightClass" @click="setRight">{{labels.right}}</button>' +
+                '</div>',
+    props: {
+        value: Object,
+        values: {
+            type: Object,
+            required: true,
+        },
+        labels: {
+            type: Object,
+            required: true
+        }
+    },
+    methods: {
+        setLeft: function() {
+            this.setValue(this.values.left);
+        },
+        setRight: function() {
+            this.setValue(this.values.right);
+        },
+        setValue: function (value) {
+            this.value = value;
+            this.$emit('input', this.value);
+            this.$emit('change');
+        }
+    },
+    computed: {
+        leftClass: function() {
+            return {
+                'btn-primary': this.value === this.values.left,
+                'btn-secondary': this.value !== this.values.left
+            }
+        },
+        rightClass: function() {
+            return {
+                'btn-primary': this.value === this.values.right,
+                'btn-secondary': this.value !== this.values.right
+            }
+        }
+    }
+});
