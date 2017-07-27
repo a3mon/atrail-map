@@ -34,13 +34,9 @@ public class ATService extends AbstractService {
         ).from(AT_TRAIL, trail)
         .orderBy(field("{0} <-> ( {1} )",
                 point,
-                select(AT_POI.POINT)
-                .from(AT_POI)
-                .where(AT_POI.ID.eq(
-                        select(AT_LAST_SHELTER.AT_SHELTER)
-                        .from(AT_LAST_SHELTER)
-                        .where(AT_LAST_SHELTER.AT_USER.eq(userId))
-                ))
+                select(AT_LAST_POI.POINT)
+                .from(AT_LAST_POI)
+                .where(AT_LAST_POI.AT_USER.eq(userId))
         ).asc())
         .limit(1);
 
@@ -94,7 +90,7 @@ public class ATService extends AbstractService {
     }
 
     public Object getUserTrail(Request req, Response resp) {
-        final int userId = Optional.ofNullable(Ints.tryParse(req.params(PARAM_ID))).orElseThrow(() -> new NotFoundException(req.pathInfo()));
+        final int userId = getIdFromPath(req);
 
         final List<Map<String, Double>> fullTrail = getFullTrail(req, resp);
         final Preferences preferences = new PreferenceService().getPreferences(req, resp);
@@ -103,13 +99,9 @@ public class ATService extends AbstractService {
         ).from(AT_TRAIL, trail)
         .orderBy(field("{0} <-> ( {1} )",
                 point,
-                select(AT_POI.POINT)
-                        .from(AT_POI)
-                        .where(AT_POI.ID.eq(
-                                select(AT_LAST_SHELTER.AT_SHELTER)
-                                        .from(AT_LAST_SHELTER)
-                                        .where(AT_LAST_SHELTER.AT_USER.eq(userId))
-                        ))
+                select(AT_LAST_POI.POINT)
+                .from(AT_LAST_POI)
+                .where(AT_LAST_POI.AT_USER.eq(userId))
         ).asc())
         .limit(1)
         .fetchOne()

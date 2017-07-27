@@ -10,10 +10,13 @@ public class Path {
 
     public static final String PREFERENCES = API_BASE + "preferences/";
 
+    public static final String TIMELINE = API_BASE + "timeline/";
+
     public static final String SESSIONS = API_BASE + "sessions/";
     public static final String USERS = API_BASE + "users/";
 
     public static final String CONFIRMATIONS = API_BASE + "confirmations/";
 
     public static final String PARAM_ID = ":id";
+    public static final String PARAM_LAST = ":last";
 }

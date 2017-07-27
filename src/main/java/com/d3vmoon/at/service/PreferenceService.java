@@ -1,22 +1,16 @@
 package com.d3vmoon.at.service;
 
-import com.d3vmoon.at.service.http.NotFoundException;
 import com.d3vmoon.at.service.pojo.Preferences;
-import com.google.common.primitives.Ints;
 import org.jooq.impl.DSL;
 import spark.Request;
 import spark.Response;
 
-import java.util.Optional;
-
 import static com.d3vmoon.at.db.Tables.AT_PREFERENCES;
-import static com.d3vmoon.at.service.SecurityService.PARAM_USER_ID;
-import static com.d3vmoon.at.service.http.Path.PARAM_ID;
 
 public class PreferenceService extends AbstractService {
 
     public Preferences getPreferences(Request req, Response resp) {
-        final Integer userId = Optional.ofNullable(Ints.tryParse(req.params(PARAM_ID))).orElseThrow(() -> new NotFoundException(req.pathInfo()));
+        final Integer userId = getIdFromPath(req);
 
         return ctx
                 .select(AT_PREFERENCES.ID,
@@ -33,7 +27,7 @@ public class PreferenceService extends AbstractService {
 
     public String setPreferences(Request req, Response resp) {
         final Preferences preferences = gson.fromJson(req.body(), Preferences.class);
-        final Integer userId = req.attribute(PARAM_USER_ID);
+        final Integer userId = SecurityService.getUserId(req);
 
         ctx.update(AT_PREFERENCES)
                 .set(AT_PREFERENCES.DIRECTION, preferences.direction)
@@ -45,4 +39,5 @@ public class PreferenceService extends AbstractService {
         resp.status(202);
         return "";
     }
+
 }

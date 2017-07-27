@@ -1,9 +1,7 @@
 package com.d3vmoon.at;
 
-import com.d3vmoon.at.service.ATService;
-import com.d3vmoon.at.service.PreferenceService;
-import com.d3vmoon.at.service.SecurityService;
-import com.d3vmoon.at.service.ShelterService;
+import com.d3vmoon.at.service.*;
+import com.d3vmoon.at.service.pojo.TimelineDate;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
@@ -22,6 +20,7 @@ public class Main {
     private final ShelterService shelterService = new ShelterService();
     private final SecurityService securityService = new SecurityService();
     private final PreferenceService preferenceService = new PreferenceService();
+    private final TimelineService timelineService = new TimelineService();
 
     public static void main(String[] args)  {
         new Main().init();
@@ -45,10 +44,13 @@ public class Main {
 
         get(SHELTERS, shelterService::getShelters, gson::toJson);
         get(SHELTERS + PARAM_ID, shelterService::getShelter, gson::toJson);
-        post(SHELTERS + PARAM_ID, shelterService::setShelter);
 
         get(PREFERENCES + PARAM_ID, preferenceService::getPreferences, gson::toJson);
         post(PREFERENCES + PARAM_ID, preferenceService::setPreferences);
+
+        get(TIMELINE + PARAM_ID, timelineService::getTimeline, gson::toJson);
+        post(TIMELINE + PARAM_ID, timelineService::addTimelineMoment);
+        delete(TIMELINE + PARAM_ID + "/" + PARAM_LAST, timelineService::deleteLastTimelineMoment);
 
         redirect.any("/", "/u/manage_trail.html");
 

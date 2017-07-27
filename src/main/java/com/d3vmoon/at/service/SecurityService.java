@@ -37,6 +37,10 @@ public class SecurityService extends AbstractService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SecurityService.class);
 
+    public static int getUserId(Request req) {
+        return req.attribute(PARAM_USER_ID);
+    }
+
     public void authenticate(Request req, Response resp) {
         if ( "GET".equals(req.requestMethod())
             || SESSIONS.equals(req.pathInfo()) && "POST".equals(req.requestMethod())
@@ -201,13 +205,7 @@ public class SecurityService extends AbstractService {
                 .fetchOne()
                 .get(AT_USER.ID);
 
-        final int shelter = ctx.select(min(AT_POI.ID)).from(AT_POI).fetchOne().value1();
-
-        ctx.insertInto(AT_LAST_SHELTER, AT_LAST_SHELTER.AT_USER, AT_LAST_SHELTER.AT_SHELTER)
-                .values(userId, shelter)
-                .execute();
-
-        final UUID token = UUID.randomUUID();
+                final UUID token = UUID.randomUUID();
 
         if ( sendConfirmationEmail(credentials.email, token) ) {
             ctx.insertInto(AT_CONFIRMATION, AT_CONFIRMATION.AT_USER, AT_CONFIRMATION.TOKEN)

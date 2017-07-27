@@ -52,11 +52,14 @@ body {
 
         <h1>Manage your Progress</h1>
 
-        <div class="form-group">
-            <select name="shelter-menu" class="form-control" aria-describedby="shelter-help" v-model="currentShelter" @change="changeShelter">
-                <option v-for="shelter in shelters" :value="shelter.id">{{ shelter.name }}</option>
-            </select>
-            <p id="shelter-help" class="form-text text-muted">Choose the shelter you passed last.</p>
+        <div class="card">
+            <div class="card-block form-inline">
+                <select name="shelter-menu" class="form-control" aria-describedby="shelter-help" v-model="timelineInput.shelter">
+                    <option v-for="shelter in shelters" :value="shelter.id">{{ shelter.name }}</option>
+                </select>
+                <input type="date" class="form-control" v-model="timelineInput.date" >
+                <button class="btn btn-primary" @click="addNewTimelineEvent">Add to Timeline</button>
+            </div>
         </div>
 
         <h2>Embed your Map</h2>
@@ -117,6 +120,18 @@ body {
             </div>
         </form>
 
+        <h2>Timeline</h2>
+
+        <div class="card" v-for="(item, index) in timeline">
+            <div class="card-block">
+                <button class="btn btn-secondary float-xs-right" v-if="index === 0" title="Delete last timeline event"
+                        @click="deleteLastTimelineEvent">
+                    <i class="fa fa-trash" aria-hidden="true"></i>
+                </button>
+                <h4 class="card-title">{{item.poiName}}</h4>
+                <h6 class="card-subtitle text-muted">Been here <span :title="item.date">{{displayDate(item.date)}}</span>.</h6>
+            </div>
+        </div>
     </div>
     <script>
 (function() {
@@ -127,7 +142,6 @@ body {
         data: {
             backend: {},
             userId: 0,
-            currentShelter: 0,
             shelters: [],
             mapSource: '',
             preferences: {
@@ -135,19 +149,18 @@ body {
                 showFullTrail: false,
                 start: (new Date()).toISOString().split('T')[0],
                 end: (new Date()).toISOString().split('T')[0]
+            },
+            timeline: [],
+            timelineInput: {
+                shelter: 0,
+                date: (new Date()).toISOString().split('T')[0],
+                comment: ""
             }
         },
         computed: {
             mapLink: function() { return '${env.HEROKU_URL}/p/at_map.html?user-id=' + this.userId; }
         },
         methods: {
-            changeShelter: function () {
-                this.backend.post('shelters/last', {
-                    id: this.currentShelter
-                })
-                .then(this.reloadMap)
-                .catch(this.errorHandler);
-            },
             reloadMap: function () {
                 document.getElementById('atrail-map').contentWindow.location.reload();
             },
@@ -170,22 +183,45 @@ body {
 
                 this.initShelterMenu();
             },
+            loadShelters: function() {
+                return this.backend.get('shelters/')
+                    .then((shelters) => {
+                        this.shelters = shelters.data;
+                    })
+                    .catch(this.errorHandler);
+            },
+            loadLastShelter: function() {
+                return this.backend.get('shelters/last', { params: {'user-id': this.userId} })
+                    .then((currentShelter) => {
+                        this.currentShelter = currentShelter.data.id;
+                        this.timelineInput.shelter = currentShelter.data.id;
+                    })
+                    .catch(this.errorHandler);
+            },
+            loadPreferences: function() {
+                return this.backend.get('preferences/' + this.userId)
+                    .then((preferences) => {
+                        this.preferences.direction = preferences.data.direction;
+                        this.preferences.showFullTrail = preferences.data.showFullTrail;
+                        this.preferences.start = this.formatDate(preferences.data.start);
+                        this.preferences.end = this.formatDate(preferences.data.end);
+                    })
+                    .catch(this.errorHandler);
+            },
+            loadTimeline: function() {
+                return this.backend.get('timeline/' + this.userId)
+                    .then((timeline => {
+                        this.timeline = timeline.data.map((item) => {
+                            item.date = this.formatDate(item.date);
+                            return item;
+                        });
+                    }))
+                    .catch(this.errorHandler);
+            },
             initShelterMenu: function() {
-                axios.all([
-                    this.backend.get('shelters/'),
-                    this.backend.get('shelters/last', { params: {'user-id': this.userId} }),
-                    this.backend.get('preferences/' + this.userId )
-                ])
-                .then(axios.spread((shelters, currentShelter, preferences) => {
-                    this.shelters = shelters.data;
-                    this.currentShelter = currentShelter.data.id;
-
-                    this.preferences.direction = preferences.data.direction;
-                    this.preferences.showFullTrail = preferences.data.showFullTrail;
-                    this.preferences.start = this.formatDate(preferences.data.start);
-                    this.preferences.end = this.formatDate(preferences.data.end);
-                }))
-                .catch(this.errorHandler);
+                this.loadShelters().then(this.loadLastShelter);
+                this.loadPreferences();
+                this.loadTimeline();
             },
             sendPreferences: function() {
                 this.backend.post('preferences/' + this.userId, {
@@ -214,6 +250,41 @@ body {
                     month: Number(parts[1]),
                     day: Number(parts[2])
                 }
+            },
+            displayDate: function(stringDate) {
+                var date = new Date(stringDate)
+                var today = new Date();
+                var yesterday = new Date();
+                yesterday.setDate(today.getDate() - 1);
+
+                if (date.toDateString() === today.toDateString()) return 'today';
+                if (date.toDateString() === yesterday.toDateString()) return 'yesterday';
+
+                return 'at ' + date.toLocaleDateString('en-US', {
+                    month: 'long', day: 'numeric'
+                });
+            },
+            deleteLastTimelineEvent: function() {
+                this.backend.delete('timeline/' + this.userId + "/last")
+                .then(() => {
+                    this.timeline.shift();
+                    this.reloadMap()
+                    this.loadLastShelter();
+                    this.loadTimeline();
+                })
+                .catch(this.errorHandler);
+            },
+            addNewTimelineEvent: function() {
+                this.backend.post('timeline/' + this.userId, {
+                    poiId: this.timelineInput.shelter,
+                    date: this.getDate(this.timelineInput.date),
+                    comment: this.timelineInput.comment
+                })
+                .then(() => {
+                    this.loadTimeline();
+                    this.reloadMap();
+                })
+                .catch(this.errorHandler);
             }
         },
         mounted: function() {
