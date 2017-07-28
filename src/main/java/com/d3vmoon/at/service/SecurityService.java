@@ -33,6 +33,7 @@ import static org.jooq.impl.DSL.*;
 public class SecurityService extends AbstractService {
 
     static final String PARAM_USER_ID = "user-id";
+    static final String PARAM_USER_ROLE = "user-role";
     static final String HEROKU_URL = System.getenv("HEROKU_URL");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SecurityService.class);
@@ -40,6 +41,7 @@ public class SecurityService extends AbstractService {
     public static int getUserId(Request req) {
         return req.attribute(PARAM_USER_ID);
     }
+    public static AtRole getUserRole(Request req) { return req.attribute(PARAM_USER_ROLE); }
 
     public void authenticate(Request req, Response resp) {
         if ( "GET".equals(req.requestMethod())
@@ -66,8 +68,8 @@ public class SecurityService extends AbstractService {
             return;
         }
 
-        Optional<Record1<Integer>> userId = ctx.select(AT_SESSION.AT_USER)
-                .from(AT_SESSION)
+        Optional<Record2<Integer, AtRole>> userId = ctx.select(AT_SESSION.AT_USER, AT_USER.ROLE)
+                .from(AT_SESSION).join(AT_USER).on(AT_SESSION.AT_USER.eq(AT_USER.ID))
                 .where(AT_SESSION.TOKEN.eq(token))
                 .fetchOptional();
 
@@ -76,7 +78,8 @@ public class SecurityService extends AbstractService {
             return;
         }
 
-        req.attribute(PARAM_USER_ID, userId.get().value1());
+        req.attribute(PARAM_USER_ID, userId.get().get(AT_SESSION.AT_USER));
+        req.attribute(PARAM_USER_ROLE, userId.get().get(AT_USER.ROLE));
     }
 
     public Object login(Request req, Response resp) {
@@ -183,6 +186,10 @@ public class SecurityService extends AbstractService {
 
         resp.status(204);
         return "";
+    }
+
+    public AtRole getRole(int userId) {
+        return ctx.select(AT_USER.ROLE).from(AT_USER).where(AT_USER.ID.eq(userId)).fetchOne(AT_USER.ROLE);
     }
 
     public Object signup(Request req, Response resp) {

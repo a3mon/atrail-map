@@ -21,6 +21,7 @@ public class Main {
     private final SecurityService securityService = new SecurityService();
     private final PreferenceService preferenceService = new PreferenceService();
     private final TimelineService timelineService = new TimelineService();
+    private final QuotaService quotaService = new QuotaService();
 
     public static void main(String[] args)  {
         new Main().init();
@@ -51,6 +52,8 @@ public class Main {
         get(TIMELINE + PARAM_ID, timelineService::getTimeline, gson::toJson);
         post(TIMELINE + PARAM_ID, timelineService::addTimelineMoment);
         delete(TIMELINE + PARAM_ID + "/" + PARAM_LAST, timelineService::deleteLastTimelineMoment);
+
+        get(QUOTA + PARAM_ID, quotaService::getQuota, gson::toJson);
 
         redirect.any("/", "/u/manage_trail.html");
 

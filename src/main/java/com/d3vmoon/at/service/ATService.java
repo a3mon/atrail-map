@@ -1,10 +1,9 @@
 package com.d3vmoon.at.service;
 
-import com.d3vmoon.at.db.enums.AtDirection;
-import com.d3vmoon.at.service.http.NotFoundException;
+import com.d3vmoon.at.db.enums.AtRole;
 import com.d3vmoon.at.service.pojo.Preferences;
+import com.d3vmoon.at.service.pojo.Quota;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.primitives.Ints;
 import org.jooq.*;
 import org.postgresql.geometric.PGpoint;
 import spark.Request;
@@ -12,64 +11,21 @@ import spark.Response;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.d3vmoon.at.db.Tables.*;
-import static com.d3vmoon.at.service.http.Path.PARAM_ID;
+import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
 import static org.jooq.impl.DSL.*;
 
 public class ATService extends AbstractService {
 
-    final private Field<Integer> indexDef = field("row_number() over (order by 1) as index", Integer.class);
-    final private Field<Integer> index = field("index", Integer.class);
-    final private Table<Record> trail = table("unnest(points) as point");
-    final private Field<Object> point = field("point");
+    private final Field<Integer> indexDef = field("row_number() over (order by 1) as index", Integer.class);
+    private final Field<Integer> index = field("index", Integer.class);
+    private final Table<Record> trail = table("unnest(points) as point");
+    private final Field<Object> point = field("point");
 
-    public List<Map<String, Double>> getCurrentTrail(Request req, Response resp) {
-        final int userId = Optional.ofNullable(Ints.tryParse(req.params(PARAM_ID))).orElseThrow(() -> new NotFoundException(req.pathInfo()));
-        final AtDirection direction = ctx.select(AT_PREFERENCES.DIRECTION).from(AT_PREFERENCES).where(AT_PREFERENCES.USER.eq(userId)).fetchOne().getValue(AT_PREFERENCES.DIRECTION);
-
-        final SelectOffsetStep<Record1<Integer>> nearestPointOnTrail = select(
-                indexDef
-        ).from(AT_TRAIL, trail)
-        .orderBy(field("{0} <-> ( {1} )",
-                point,
-                select(AT_LAST_POI.POINT)
-                .from(AT_LAST_POI)
-                .where(AT_LAST_POI.AT_USER.eq(userId))
-        ).asc())
-        .limit(1);
-
-        final Condition condition;
-
-        switch (direction) {
-            case nobo:
-                condition = index.le(nearestPointOnTrail);
-                break;
-            case sobo:
-                condition = index.ge(nearestPointOnTrail);
-                break;
-            default:
-                throw new RuntimeException(String.format("Unhandled direction %s", direction.getName()));
-        }
-
-        return ctx.select(point)
-        .from(
-                select(
-                        point,
-                        indexDef)
-                .from(
-                        AT_TRAIL,
-                        trail)
-                .orderBy(index.asc())
-        )
-        .where(condition)
-        .fetch()
-        .map(r -> {
-            PGpoint p = r.get(point, PGpoint.class);
-            return ImmutableMap.of("lat", p.x, "lng", p.y);
-        });
-    }
+    private final SecurityService securityService = new SecurityService();
+    private final PreferenceService preferenceService = new PreferenceService();
+    private final QuotaService quotaService = new QuotaService();
 
     public List<Map<String, Double>> getFullTrail(Request req, Response resp) {
         return ctx.select(point)
@@ -77,10 +33,10 @@ public class ATService extends AbstractService {
                select(
                        point,
                        indexDef)
-                       .from(
-                               AT_TRAIL,
-                               trail)
-                       .orderBy(index.asc())
+               .from(
+                       AT_TRAIL,
+                       trail)
+               .orderBy(index.asc())
         )
         .fetch()
         .map(r -> {
@@ -91,10 +47,17 @@ public class ATService extends AbstractService {
 
     public Object getUserTrail(Request req, Response resp) {
         final int userId = getIdFromPath(req);
+        final AtRole userRole = securityService.getRole(userId);
+
+        final Quota.ConsumedQuota quota = quotaService.consumeQuota(userId, userRole);
+        if (quota.previousQuota <= 0 ) {
+            resp.status(SC_FORBIDDEN);
+            return null;
+        }
 
         final List<Map<String, Double>> fullTrail = getFullTrail(req, resp);
-        final Preferences preferences = new PreferenceService().getPreferences(req, resp);
-        final Integer currentIndex = ctx.select(
+        final Preferences preferences = preferenceService.getPreferences(req, resp);
+        final int currentIndex = ctx.select(
                 indexDef
         ).from(AT_TRAIL, trail)
         .orderBy(field("{0} <-> ( {1} )",
@@ -111,6 +74,7 @@ public class ATService extends AbstractService {
                 "trail", fullTrail,
                 "direction", preferences.direction,
                 "showFullTrail", preferences.showFullTrail,
-                "currentIndex", currentIndex);
+                "currentIndex", currentIndex,
+                "quota", quota.quota);
     }
 }

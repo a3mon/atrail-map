@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Manage Trail</title>
     <link rel="icon" type="image/ico" href="/r/favicon-map.ico">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
     <script src="https://unpkg.com/vue@2.3.4/dist/vue.min.js"></script>
     <script src="https://unpkg.com/axios@0.16.2/dist/axios.min.js"></script>
@@ -33,7 +33,7 @@ body {
     <div class="container" id="app">
         <div class="header clearfix">
             <nav>
-                <ul class="nav nav-pills float-xs-right">
+                <ul class="nav nav-pills float-right">
                     <li class="nav-item">
                         <a class="nav-link active" href="#">Manage <span class="sr-only">(current)</span></a>
                     </li>
@@ -52,7 +52,7 @@ body {
 
         <h1>Manage your Progress</h1>
 
-        <div class="card">
+        <div class="card mb-3">
             <div class="card-block form-inline">
                 <select name="shelter-menu" class="form-control" aria-describedby="shelter-help" v-model="timelineInput.shelter">
                     <option v-for="shelter in shelters" :value="shelter.id">{{ shelter.name }}</option>
@@ -93,7 +93,7 @@ body {
         </div>
 
         <h2 id="preferences">Preferences</h2>
-        <form>
+        <form class="mb-3">
             <div class="form-group row">
                 <label for="direction" class="hidden-xs-down col-sm-2 col-form-label">Direction</label>
                 <toggle-button id="direction" class="col-xs-12 col-sm-10" aria-label="Direction"
@@ -120,11 +120,21 @@ body {
             </div>
         </form>
 
-        <h2>Timeline</h2>
+        <h2>Quota</h2>
 
-        <div class="card" v-for="(item, index) in timeline">
+        <div class="card text-center w-50 mb-3" :class="{'card-inverse': quota.quota < 100, 'card-danger': quota.quota < 100}">
             <div class="card-block">
-                <button class="btn btn-secondary float-xs-right" v-if="index === 0" title="Delete last timeline event"
+                <h4 class="card-title">{{quota.quota}}</h4>
+                <h6 class="card-subtitle mb-2">Left in this month</h6>
+                <p class="card-text">You need quota to display your map. To get more quota you need to upgrade your account.</p>
+                <a href="#" class="card-link" :class="{'btn': quota.quota < 100, 'btn-primary': quota.quota < 100}">Buy more quota</a>
+            </div>
+        </div>
+
+        <h2>Timeline</h2>
+        <div class="card mb-1" v-for="(item, index) in timeline">
+            <div class="card-block">
+                <button class="btn btn-secondary float-right" v-if="index === 0" title="Delete last timeline event"
                         @click="deleteLastTimelineEvent">
                     <i class="fa fa-trash" aria-hidden="true"></i>
                 </button>
@@ -155,7 +165,8 @@ body {
                 shelter: 0,
                 date: (new Date()).toISOString().split('T')[0],
                 comment: ""
-            }
+            },
+            quota: {}
         },
         computed: {
             mapLink: function() { return '${env.HEROKU_URL}/p/at_map.html?user-id=' + this.userId; }
@@ -181,7 +192,7 @@ body {
                 this.userId = userId;
                 this.backend = backend;
 
-                this.initShelterMenu();
+                this.initPage();
             },
             loadShelters: function() {
                 return this.backend.get('shelters/')
@@ -210,18 +221,26 @@ body {
             },
             loadTimeline: function() {
                 return this.backend.get('timeline/' + this.userId)
-                    .then((timeline => {
+                    .then((timeline) => {
                         this.timeline = timeline.data.map((item) => {
                             item.date = this.formatDate(item.date);
                             return item;
                         });
-                    }))
+                    })
                     .catch(this.errorHandler);
             },
-            initShelterMenu: function() {
+            loadQuota: function() {
+                return this.backend.get('quota/' + this.userId)
+                    .then((quota) => {
+                        this.quota = quota.data;
+                    })
+                    .catch(this.errorHandler);
+            },
+            initPage: function() {
                 this.loadShelters().then(this.loadLastShelter);
                 this.loadPreferences();
                 this.loadTimeline();
+                this.loadQuota();
             },
             sendPreferences: function() {
                 this.backend.post('preferences/' + this.userId, {

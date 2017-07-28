@@ -9,7 +9,7 @@ public class Path {
     public static final String SHELTERS = API_BASE + "shelters/";
 
     public static final String PREFERENCES = API_BASE + "preferences/";
-
+    public static final String QUOTA = API_BASE + "quota/";
     public static final String TIMELINE = API_BASE + "timeline/";
 
     public static final String SESSIONS = API_BASE + "sessions/";
