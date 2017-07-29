@@ -107,3 +107,36 @@ Vue.component('toggle-button', {
         }
     }
 });
+
+Vue.component('nav-bar', {
+    template:   '<nav>' +
+                    '<ul class="nav nav-pills float-right">' +
+                        '<li class="nav-item" v-for="link in links" v-if="!link.userLink || user > 0">' +
+                            '<a class="nav-link" :class="{active: active === link.name}" :href="link.href">{{link.name}}</a>' +
+                        '</li>' +
+                        '<li class="nav-item">' +
+                            '<slot>' +
+                                '<a class="nav-link" href="/p/login.html">Login</span></a>' +
+                            '</slot>' +
+                        '</li>' +
+                    '</ul>' +
+                '</nav>',
+    props: {
+        active: {
+            type: String
+        },
+        user: {
+            type: Number
+        }
+    },
+    data: function() {
+        return {
+            links: [
+                { name: 'Options', href: '/u/options.html', userLink: true },
+                { name: 'Manage', href: '/u/manage_trail.html' },
+                { name: 'About', href: '/p/about.html' },
+                { name: 'Contact', href: '/p/about.html#contact-us' }
+            ]
+        }
+    }
+});

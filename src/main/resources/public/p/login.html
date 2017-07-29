@@ -6,11 +6,12 @@
     <meta name="google-signin-client_id" content="1071345134266-5s1v1hqhn8ao690jrp89j6r24l57bggs.apps.googleusercontent.com">
     <title>Login</title>
     <link rel="icon" type="image/ico" href="/r/favicon-map.ico">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
     <script src="https://unpkg.com/vue@2.3.4/dist/vue.min.js"></script>
     <script src="https://unpkg.com/axios@0.16.2/dist/axios.min.js"></script>
     <script src="https://apis.google.com/js/platform.js"></script>
+    <script src="/r/common.js"></script>
     <style type="text/css">
 body {
     padding-top: 1.5rem;
@@ -35,34 +36,22 @@ body {
 <body>
 <div id="app" class="container">
     <div class="header clearfix">
-        <nav>
-            <ul class="nav nav-pills float-xs-right">
-                <li class="nav-item">
-                    <a class="nav-link" href="/u/manage_trail.html">Manage</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/p/about.html">About</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Contact</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" href="#">Login <span class="sr-only">(current)</span></a>
-                </li>
-            </ul>
-        </nav>
+        <nav-bar>
+            <a class="nav-link active" href="#">Login <span class="sr-only">(current)</span></a>
+        </nav-bar>
     </div>
+
     <div class="jumbotron">
-        <p>
-            <h1 class="text-xs-center">Hello, please login!</h1>
-        </p>
-        <p class="text-xs-center">
+
+        <h1 class="text-center">Hello, please login!</h1>
+
+        <p class="text-center mt-5">
             <button id="login-google" type="button" class="btn btn-google">
                 <i class="fa fa-google" aria-hidden="true"></i> Sign in with Google
              </button>
         </p>
-        <p class="text-xs-center">or</p>
-        <div class="card card-inverse card-danger text-xs-center" v-bind:class="{ 'hidden-xs-up': !login.error }">
+        <p class="text-center">or</p>
+        <div class="card card-inverse card-danger text-xs-center" :class="{ 'hidden-xs-up': !login.error }">
             <div class="card-block">
                 <p class="card-text" style="color: white;">
                     <strong>You provided invalid credentials. Please try again.</strong>
@@ -83,7 +72,7 @@ body {
                 </div>
             </div>
             <div class="form-group row">
-                <div class="offset-sm-2 col-xs-10">
+                <div class="offset-sm-2 col-xs-12 col-sm-10">
                     <div class="form-check">
                         <label class="form-check-label">
                             <input class="form-check-input" type="checkbox" id="login-remember-me" v-model="login.rememberMe"> Remember me
@@ -92,37 +81,37 @@ body {
                 </div>
             </div>
             <div class="form-group row">
-                <div class="offset-sm-2 col-xs-10">
+                <div class="offset-sm-2 col-xs-12 col-sm-10">
                     <a href="#" class="btn btn-primary" @click.prevent="submitCredentials">Sign in</a>
                 </div>
             </div>
         </form>
     </div>
-    <h1 id="sign-up" class="text-xs-center" >Aren't an User yet?</h1>
-    <p class="text-xs-center" >Sign up here to get your own tracker for the AT.</p>
+    <h1 id="sign-up" class="text-center" >Aren't an User yet?</h1>
+    <p class="text-center" >Sign up here to get your own tracker for the AT.</p>
     <form id="register-form" @keyup.enter="submitSignup">
-        <div class="form-group row" v-bind:class="{ 'has-danger': register.errors.email }">
+        <div class="form-group row" :class="{ 'has-danger': register.errors.email }">
             <label for="register-email" class="hidden-xs-down col-sm-2 col-form-label">Email</label>
             <div class="col-xs-12 col-sm-10">
                 <input type="email" class="form-control" id="register-email" placeholder="Email" v-model="register.email" @keyup="checkEmail">
-                <div class="form-control-feedback" v-bind:class="{ 'hidden-xs-up': !register.errors.email }">Please enter a valid email address.</div>
+                <div class="form-control-feedback" :class="{ 'hidden-xs-up': !register.errors.email }">Please enter a valid email address.</div>
             </div>
         </div>
-        <div class="form-group row" v-bind:class="{ 'has-danger': register.errors.password }">
+        <div class="form-group row" :class="{ 'has-danger': register.errors.password }">
                 <label for="register-password" class="hidden-xs-down col-sm-2 col-form-label">Password</label>
                 <div class="col-xs-12 col-sm-10">
                     <input type="password" class="form-control" id="register-password" placeholder="Password" v-model="register.password" @keyup="checkPassword">
-                    <div class="form-control-feedback" v-bind:class="{ 'hidden-xs-up': !register.errors.password }">Please enter a strong password.</div>
+                    <div class="form-control-feedback" :class="{ 'hidden-xs-up': !register.errors.password }">Please enter a strong password.</div>
                 </div>
             </div>
-            <div class="form-group row" v-bind:class="{ 'has-danger': register.errors.repeat }">
+            <div class="form-group row" :class="{ 'has-danger': register.errors.repeat }">
                 <label for="register-repeat" class="hidden-xs-down col-sm-2 col-form-label">Repeat</label>
                 <div class="col-xs-12 col-sm-10">
                     <input type="password" class="form-control" id="register-repeat" placeholder="Repeat" v-model="register.repeat" @keyup="checkRepeat">
-                    <div class="form-control-feedback" v-bind:class="{ 'hidden-xs-up': !register.errors.repeat }">Sorry, your passwords don't match.</div>
+                    <div class="form-control-feedback" :class="{ 'hidden-xs-up': !register.errors.repeat }">Sorry, your passwords don't match.</div>
                 </div>
             </div>
-            <div class="card card-inverse card-danger text-xs-center" v-bind:class="{ 'hidden-xs-up': !register.errors.duplicate }">
+            <div class="card card-inverse card-danger text-xs-center" :class="{ 'hidden-xs-up': !register.errors.duplicate }">
                 <div class="card-block">
                     <p class="card-text" style="color: white;">
                         <strong>This email is already signed up.</strong>
@@ -130,7 +119,7 @@ body {
                 </div>
             </div>
             <div class="form-group row">
-                <div class="offset-sm-2 col-xs-10">
+                <div class="offset-sm-2 col-xs-12 col-sm-10">
                     <a href="#" class="btn btn-secondary" @click.prevent="submitSignup">Sign Up</a>
                 </div>
             </div>

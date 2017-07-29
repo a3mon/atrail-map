@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Options</title>
+    <link rel="icon" type="image/ico" href="/r/favicon-map.ico">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <script src="https://unpkg.com/vue@2.3.4/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/axios@0.16.2/dist/axios.min.js"></script>
+    <script src="/r/common.js"></script>
+    <style type="text/css">
+body {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+}
+
+.header {
+    margin-bottom: 2rem;
+
+    padding-right: 0;
+    padding-left: 0;
+    padding-bottom: 1rem;
+    border-bottom: .05rem solid #e5e5e5;
+}
+
+#preferences {
+    margin-top: 1rem;
+}
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <div class="header clearfix">
+            <nav-bar active="Options" :user="userId">
+                <login-button login-required="true" @user-identified="userIdentified"></login-button>
+            </nav-bar>
+        </div>
+
+        <h2>Embed your Map</h2>
+        <div class="row">
+            <div class="col-md-6 col-sm-6">
+                <p>Copy the following code into your page, to embed the map.</p>
+                <p>
+                    <button type="button" class="btn btn-secondary" @click="copyToClipboard">
+                        <i class="fa fa-clipboard" aria-hidden="true"></i> Copy to Clipboard
+                    </button>
+                </p>
+                <textarea id="map-source" rows="5" class="form-control mb-3" v-model="mapSource"></textarea>
+                <p>
+                    Or you can share this link, to show the map in fullscreen.<br />
+                    <a :href="mapLink" target="_blank">{{mapLink}}</a>
+                </p>
+            </div>
+            <div class="col-md-6 col-sm-6 text-center">
+                <iframe id="atrail-map"
+                        name="Appalachian Trail Map"
+                        title="Appalachian Trail Map"
+                        width="300"
+                        height="300"
+                        frameborder="0"
+                        scrolling="no"
+                        marginheight="0"
+                        marginwidth="0"
+                        :src="mapLink">
+                </iframe>
+            </div>
+        </div>
+
+        <h2 id="preferences">Preferences</h2>
+        <form class="mb-3">
+            <div class="form-group row">
+                <label for="direction" class="hidden-xs-down col-sm-2 col-form-label">Direction</label>
+                <toggle-button id="direction" class="col-xs-12 col-sm-10" aria-label="Direction"
+                               :values="{left: 'nobo', right: 'sobo'}" :labels="{left: 'Nobo', right: 'Sobo'}"
+                               v-model="preferences.direction" @change="sendPreferences"></toggle-button>
+            </div>
+            <div class="form-group row">
+                <label for="showFullTrail" class="hidden-xs-down col-sm-2 col-form-label">Show Full Trail</label>
+                <toggle-button id="showFullTrail" class="col-xs-12 col-sm-10" aria-label="Show Full Trail"
+                               :values="{left: false, right: true}" :labels="{left: 'No', right: 'Yes'}"
+                               v-model="preferences.showFullTrail" @change="sendPreferences"></toggle-button>
+            </div>
+            <div class="form-group row">
+                <label for="start" class="hidden-xs-down col-sm-2 col-form-label">Start Date</label>
+                <div class="col-xs-12 col-sm-10">
+                    <input id="start" type="date" class="form-control" v-model="preferences.start" @change="sendPreferences">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="end" class="hidden-xs-down col-sm-2 col-form-label">End Date</label>
+                <div class="col-xs-12 col-sm-10">
+                    <input id="end" type="date" class="form-control" v-model="preferences.end" @change="sendPreferences">
+                </div>
+            </div>
+        </form>
+
+        <h2>Quota</h2>
+
+        <div class="card text-center w-50 mb-3" :class="{'card-inverse': quota.quota < 100, 'card-danger': quota.quota < 100}">
+            <div class="card-block">
+                <h4 class="card-title">{{quota.quota}}</h4>
+                <h6 class="card-subtitle mb-2">Left in this month</h6>
+                <p class="card-text">You need quota to display your map. To get more quota you need to upgrade your account.</p>
+                <a href="#" class="card-link" :class="{'btn': quota.quota < 100, 'btn-primary': quota.quota < 100}">Buy more quota</a>
+            </div>
+        </div>
+
+    </div>
+    <script>
+(function() {
+    'use strict';
+
+    var app = new Vue({
+        el: '#app',
+        data: {
+            backend: {},
+            userId: 0,
+            mapSource: '',
+            preferences: {
+                direction: 'nobo',
+                showFullTrail: false,
+                start: (new Date()).toISOString().split('T')[0],
+                end: (new Date()).toISOString().split('T')[0]
+            },
+            quota: {}
+        },
+        computed: {
+            mapLink: function() { return '${env.HEROKU_URL}/p/at_map.html?user-id=' + this.userId; }
+        },
+        methods: {
+            reloadMap: function () {
+                document.getElementById('atrail-map').contentWindow.location.reload();
+            },
+            errorHandler: function (res) {
+                if ( res.status === 401 ) {
+                    window.location.replace(res.data.login);
+                } else {
+                    alert( res.message );
+                }
+            },
+            copyToClipboard: function() {
+                var mapSource = document.getElementById('map-source')
+                mapSource.focus();
+                mapSource.select();
+                document.execCommand("copy");
+            },
+            userIdentified: function(userId, backend) {
+                this.userId = userId;
+                this.backend = backend;
+
+                this.initPage();
+            },
+            loadPreferences: function() {
+                return this.backend.get('preferences/' + this.userId)
+                    .then((preferences) => {
+                        this.preferences.direction = preferences.data.direction;
+                        this.preferences.showFullTrail = preferences.data.showFullTrail;
+                        this.preferences.start = this.formatDate(preferences.data.start);
+                        this.preferences.end = this.formatDate(preferences.data.end);
+                    })
+                    .catch(this.errorHandler);
+            },
+            loadQuota: function() {
+                return this.backend.get('quota/' + this.userId)
+                    .then((quota) => {
+                        this.quota = quota.data;
+                    })
+                    .catch(this.errorHandler);
+            },
+            initPage: function() {
+                this.loadPreferences();
+                this.loadQuota();
+            },
+            sendPreferences: function() {
+                this.backend.post('preferences/' + this.userId, {
+                    direction: this.preferences.direction,
+                    start: this.getDate(this.preferences.start),
+                    end: this.getDate(this.preferences.end),
+                    showFullTrail: this.preferences.showFullTrail
+                })
+                .then(this.reloadMap)
+                .catch(this.errorHandler);
+            },
+            formatDate: function(jsonDate) {
+                var month = '' + jsonDate.month,
+                    day = '' + jsonDate.day,
+                    year = jsonDate.year;
+
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+
+                return [year, month, day].join('-');
+            },
+            getDate: function(stringDate) {
+                var parts = stringDate.split('-');
+                return {
+                    year: Number(parts[0]),
+                    month: Number(parts[1]),
+                    day: Number(parts[2])
+                }
+            },
+        },
+        mounted: function() {
+            this.mapSource = document.getElementById('atrail-map').outerHTML;
+        }
+    });
+
+})();
+    </script>
+</body>
+</html>

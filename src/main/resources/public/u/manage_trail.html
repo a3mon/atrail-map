@@ -32,106 +32,39 @@ body {
 <body>
     <div class="container" id="app">
         <div class="header clearfix">
-            <nav>
-                <ul class="nav nav-pills float-right">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#">Manage <span class="sr-only">(current)</span></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/p/about.html">About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Contact</a>
-                    </li>
-                    <li class="nav-item">
-                        <login-button login-required="true" @user-identified="userIdentified"></login-button>
-                    </li>
-                </ul>
-            </nav>
+            <nav-bar active="Manage" :user="userId">
+                <login-button login-required="true" @user-identified="userIdentified"></login-button>
+            </nav-bar>
         </div>
 
-        <h1>Manage your Progress</h1>
-
-        <div class="card mb-3">
+        <div class="card mb-1">
             <div class="card-block form-inline">
-                <select name="shelter-menu" class="form-control" aria-describedby="shelter-help" v-model="timelineInput.shelter">
+                <select name="shelter-menu" class="form-control mr-3" aria-describedby="shelter-help" v-model="timelineInput.shelter">
                     <option v-for="shelter in shelters" :value="shelter.id">{{ shelter.name }}</option>
                 </select>
-                <input type="date" class="form-control" v-model="timelineInput.date" >
+                <input type="date" class="form-control mr-3" v-model="timelineInput.date" >
                 <button class="btn btn-primary" @click="addNewTimelineEvent">Add to Timeline</button>
             </div>
         </div>
 
-        <h2>Embed your Map</h2>
-        <div class="row">
-            <div class="col-md-6 col-sm-6">
-                <iframe id="atrail-map"
-                        name="Appalachian Trail Map"
-                        title="Appalachian Trail Map"
-                        width="300"
-                        height="300"
-                        frameborder="0"
-                        scrolling="no"
-                        marginheight="0"
-                        marginwidth="0"
-                        :src="mapLink">
-                </iframe><br />
-                <a :href="mapLink" target="_blank" class="btn btn-secondary" role="button">
-                    <i class="fa fa-arrows-alt" aria-hidden="true"></i> fullscreen
-                </a>
-
-            </div>
-            <div class="col-md-6 col-sm-6">
-                <p>Copy the following code into your site to embed the left map.</p>
-                <p>
-                    <button type="button" class="btn btn-secondary" @click="copyToClipboard">
-                        <i class="fa fa-clipboard" aria-hidden="true"></i> Copy to Clipboard
-                    </button>
-                </p>
-                <textarea id="map-source" rows="5" class="form-control" v-model="mapSource"></textarea>
-            </div>
+        <div class="card mb-1" style="position: relative;">
+            <a :href="mapLink" target="_blank" class="btn btn-lg btn-secondary"
+               style="position: absolute; top: 10px; right: 10px; " role="button">
+                <i class="fa fa-arrows-alt" aria-hidden="true"></i> fullscreen
+            </a>
+            <iframe id="atrail-map"
+                    name="Appalachian Trail Map"
+                    title="Appalachian Trail Map"
+                    width="100%"
+                    height="300"
+                    frameborder="0"
+                    scrolling="no"
+                    marginheight="0"
+                    marginwidth="0"
+                    :src="mapLink">
+            </iframe>
         </div>
 
-        <h2 id="preferences">Preferences</h2>
-        <form class="mb-3">
-            <div class="form-group row">
-                <label for="direction" class="hidden-xs-down col-sm-2 col-form-label">Direction</label>
-                <toggle-button id="direction" class="col-xs-12 col-sm-10" aria-label="Direction"
-                               :values="{left: 'nobo', right: 'sobo'}" :labels="{left: 'Nobo', right: 'Sobo'}"
-                               v-model="preferences.direction" @change="sendPreferences"></toggle-button>
-            </div>
-            <div class="form-group row">
-                <label for="showFullTrail" class="hidden-xs-down col-sm-2 col-form-label">Show Full Trail</label>
-                <toggle-button id="showFullTrail" class="col-xs-12 col-sm-10" aria-label="Show Full Trail"
-                               :values="{left: false, right: true}" :labels="{left: 'No', right: 'Yes'}"
-                               v-model="preferences.showFullTrail" @change="sendPreferences"></toggle-button>
-            </div>
-            <div class="form-group row">
-                <label for="start" class="hidden-xs-down col-sm-2 col-form-label">Start Date</label>
-                <div class="col-xs-12 col-sm-10">
-                    <input id="start" type="date" class="form-control" v-model="preferences.start" @change="sendPreferences">
-                </div>
-            </div>
-            <div class="form-group row">
-                <label for="end" class="hidden-xs-down col-sm-2 col-form-label">End Date</label>
-                <div class="col-xs-12 col-sm-10">
-                    <input id="end" type="date" class="form-control" v-model="preferences.end" @change="sendPreferences">
-                </div>
-            </div>
-        </form>
-
-        <h2>Quota</h2>
-
-        <div class="card text-center w-50 mb-3" :class="{'card-inverse': quota.quota < 100, 'card-danger': quota.quota < 100}">
-            <div class="card-block">
-                <h4 class="card-title">{{quota.quota}}</h4>
-                <h6 class="card-subtitle mb-2">Left in this month</h6>
-                <p class="card-text">You need quota to display your map. To get more quota you need to upgrade your account.</p>
-                <a href="#" class="card-link" :class="{'btn': quota.quota < 100, 'btn-primary': quota.quota < 100}">Buy more quota</a>
-            </div>
-        </div>
-
-        <h2>Timeline</h2>
         <div class="card mb-1" v-for="(item, index) in timeline">
             <div class="card-block">
                 <button class="btn btn-secondary float-right" v-if="index === 0" title="Delete last timeline event"
@@ -153,20 +86,12 @@ body {
             backend: {},
             userId: 0,
             shelters: [],
-            mapSource: '',
-            preferences: {
-                direction: 'nobo',
-                showFullTrail: false,
-                start: (new Date()).toISOString().split('T')[0],
-                end: (new Date()).toISOString().split('T')[0]
-            },
             timeline: [],
             timelineInput: {
                 shelter: 0,
                 date: (new Date()).toISOString().split('T')[0],
                 comment: ""
             },
-            quota: {}
         },
         computed: {
             mapLink: function() { return '${env.HEROKU_URL}/p/at_map.html?user-id=' + this.userId; }
@@ -181,12 +106,6 @@ body {
                 } else {
                     alert( res.message );
                 }
-            },
-            copyToClipboard: function() {
-                var mapSource = document.getElementById('map-source')
-                mapSource.focus();
-                mapSource.select();
-                document.execCommand("copy");
             },
             userIdentified: function(userId, backend) {
                 this.userId = userId;
@@ -209,16 +128,6 @@ body {
                     })
                     .catch(this.errorHandler);
             },
-            loadPreferences: function() {
-                return this.backend.get('preferences/' + this.userId)
-                    .then((preferences) => {
-                        this.preferences.direction = preferences.data.direction;
-                        this.preferences.showFullTrail = preferences.data.showFullTrail;
-                        this.preferences.start = this.formatDate(preferences.data.start);
-                        this.preferences.end = this.formatDate(preferences.data.end);
-                    })
-                    .catch(this.errorHandler);
-            },
             loadTimeline: function() {
                 return this.backend.get('timeline/' + this.userId)
                     .then((timeline) => {
@@ -229,28 +138,9 @@ body {
                     })
                     .catch(this.errorHandler);
             },
-            loadQuota: function() {
-                return this.backend.get('quota/' + this.userId)
-                    .then((quota) => {
-                        this.quota = quota.data;
-                    })
-                    .catch(this.errorHandler);
-            },
             initPage: function() {
                 this.loadShelters().then(this.loadLastShelter);
-                this.loadPreferences();
                 this.loadTimeline();
-                this.loadQuota();
-            },
-            sendPreferences: function() {
-                this.backend.post('preferences/' + this.userId, {
-                    direction: this.preferences.direction,
-                    start: this.getDate(this.preferences.start),
-                    end: this.getDate(this.preferences.end),
-                    showFullTrail: this.preferences.showFullTrail
-                })
-                .then(this.reloadMap)
-                .catch(this.errorHandler);
             },
             formatDate: function(jsonDate) {
                 var month = '' + jsonDate.month,
@@ -305,9 +195,6 @@ body {
                 })
                 .catch(this.errorHandler);
             }
-        },
-        mounted: function() {
-            this.mapSource = document.getElementById('atrail-map').outerHTML;
         }
     });
 
