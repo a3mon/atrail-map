@@ -1,11 +1,13 @@
 package com.d3vmoon.at;
 
 import com.d3vmoon.at.service.*;
-import com.d3vmoon.at.service.pojo.TimelineDate;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Route;
+import spark.Spark;
+import spark.utils.IOUtils;
 
 import static com.d3vmoon.at.service.http.Path.*;
 import static spark.Spark.*;
@@ -29,8 +31,17 @@ public class Main {
 
     private void init() {
         port(Integer.valueOf(System.getenv("PORT")));
-        staticFileLocation("/public");
+        staticFileLocation(PUBLIC);
 
+        /* Static files */
+        serve("/p/about", "/p/about.html");
+        serve("/p/login", "/p/login.html");
+        serve("/p/profile", "/p/profile.html");
+
+        serve("/u/manage", "/u/manage_trail.html");
+        serve("/u/options", "/u/options.html");
+
+        /* API */
         before("/api/*", securityService::authenticate);
 
         post(SESSIONS, securityService::login, gson::toJson);
@@ -55,9 +66,18 @@ public class Main {
 
         get(QUOTA + PARAM_ID, quotaService::getQuota, gson::toJson);
 
-        redirect.any("/", "/u/manage_trail.html");
+        redirect.any("/", "/u/manage");
 
         exception(Exception.class, (exception, request, response) -> LOGGER.error("uuups...", exception));
+    }
+
+    private static void serve(String webPath, String localPath) {
+        get(webPath, serve(localPath));
+        get(webPath + "/*", serve(localPath));
+    }
+
+    private static Route serve(String path) {
+        return (request, response) -> IOUtils.toString(Spark.class.getResourceAsStream(PUBLIC + path));
     }
 
 }

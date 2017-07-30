@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile</title>
+    <link rel="icon" type="image/ico" href="/r/favicon-map.ico">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <script src="https://unpkg.com/vue@2.3.4/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/vue-router@2.7.0/dist/vue-router.js"></script>
+    <script src="https://unpkg.com/axios@0.16.2/dist/axios.min.js"></script>
+    <script src="/r/common.js"></script>
+    <style type="text/css">
+body {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+}
+
+.header {
+    margin-bottom: 2rem;
+
+    padding-right: 0;
+    padding-left: 0;
+    padding-bottom: 1rem;
+    border-bottom: .05rem solid #e5e5e5;
+}
+
+.share {
+    position: relative;
+}
+
+.share a, .share button {
+    width: 5rem;
+    height: 5rem;
+    font-size: 2.5rem;
+    border-radius: 2.5rem;
+    float: right;
+    margin-left: 0.25rem;
+    line-height: 3.8rem;
+}
+
+.share #facebook {
+    background-color: #3B5998;
+    border-color: #3B5998;
+}
+
+.share #twitter {
+    background-color: #1DA1F2;
+    border-color: #1DA1F2;
+}
+
+.share #google {
+    background-color: #DB4437;
+    border-color: #DB4437;
+}
+
+.share div {
+    position: absolute;
+    top: 0px;
+    right: 5.25rem;
+    width: 26.25rem;
+}
+
+.slide-fade-enter-active, .slide-fade-leave-active {
+    transition: all .3s ease;
+}
+.slide-fade-enter, .slide-fade-leave-to {
+    transform: translateX(5.25rem);
+    opacity: 0;
+}
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <div class="header clearfix">
+            <nav-bar active="Profile" :user="userId">
+                <login-button login-required="true" @user-identified="userIdentified"></login-button>
+            </nav-bar>
+        </div>
+
+        <div class="row">
+            <div class="col-10">
+                <h1>This is the Profile of {{displayName}}<small v-if="realName && realName.length > 0 && realName !== displayName"> ({{realName}})</small></h1>
+                <p>{{displayName}} has last been at {{lastLocation}} <span :title="lastDate">{{displayDate(lastDate)}}</span>.</p>
+            </div>
+            <div class="col-2">
+                <div class="share text-right">
+                    <transition name="slide-fade">
+                        <div v-if="showShare" @click="showShare = false">
+                            <a id="facebook" role="button" class="btn btn-primary" @click="console.log('facebook')"
+                               :href="'https://www.facebook.com/sharer/sharer.php?u=${env.HEROKU_URL}' + $route.fullPath" target="_blank" title="Share on Facebook">
+                                <i class="fa fa-facebook" aria-hidden="true"></i>
+                            </a>
+                            <a id="twitter" role="button" class="btn btn-primary"
+                                :href="'https://twitter.com/intent/tweet?source=${env.HEROKU_URL}' + $route.fullPath + '&text=${env.HEROKU_URL}' + $route.fullPath " target="_blank" title="Tweet">
+                                <i class="fa fa-twitter" aria-hidden="true"></i>
+                            </a>
+                            <a id="google" role="button" class="btn btn-primary"
+                                :href="'https://plus.google.com/share?url=${env.HEROKU_URL}' + $route.fullPath" target="_blank" title="Share on Google+">
+                                <i class="fa fa-google-plus" aria-hidden="true"></i>
+                            </a>
+                            <a role="button" class="btn btn-primary"
+                               :href="'mailto:?subject=Appalachian Trail&body=${env.HEROKU_URL}' + $route.fullPath" target="_blank" title="Email">
+                                <i class="fa fa-envelope" aria-hidden="true"></i>
+                            </a>
+                            <a role="button" class="btn btn-primary" title="Copy to Clipboard"
+                                href="#" @click.prevent="copyToClipboard">
+                                <i class="fa fa-clipboard" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </transition>
+                    <button role="button" class="btn btn-primary" @click="showShare = ! showShare"
+                            :class="{ active: showShare }" title="Share">
+                        <i class="fa fa-share-alt" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-1" style="position: relative;">
+            <a :href="mapLink" target="_blank" class="btn btn-lg btn-secondary"
+               style="position: absolute; top: 10px; right: 10px; " role="button">
+                <i class="fa fa-arrows-alt" aria-hidden="true"></i> fullscreen
+            </a>
+            <iframe id="atrail-map"
+                    name="Appalachian Trail Map"
+                    title="Appalachian Trail Map"
+                    width="100%"
+                    height="300"
+                    frameborder="0"
+                    scrolling="no"
+                    marginheight="0"
+                    marginwidth="0"
+                    :src="mapLink">
+            </iframe>
+        </div>
+
+        <div class="card mb-1" v-for="(item, index) in timeline">
+            <div class="card-block">
+                <h4 class="card-title">{{item.poiName}}</h4>
+                <h6 class="card-subtitle text-muted">Been here <span :title="item.date">{{displayDate(item.date)}}</span>.</h6>
+            </div>
+        </div>
+    </div>
+    <script>
+(function() {
+    'use strict';
+
+    var router = new VueRouter({
+        mode: 'history',
+        routes: [{ path: '/p/profile/:id' }]
+    });
+
+    var app = new Vue({
+        el: '#app',
+        router: router,
+        data: {
+            backend: axios.create({
+                baseURL: '${env.HEROKU_URL}/api/v1/',
+                headers: { 'Content-Type': 'application/json; charset=utf-8' }
+            }),
+            userId: 0,
+            timeline: [],
+
+            showShare: false,
+            displayName: 'anonymous',
+
+            profileId: 0,
+            trailName: '',
+            realName: '',
+            lastLocation: '',
+            lastDate: ''
+        },
+        computed: {
+            mapLink: function() { return '${env.HEROKU_URL}/p/at_map.html?user-id=' + this.profileId; }
+        },
+        methods: {
+            errorHandler: function (res) {
+                if ( res.status === 401 ) {
+                    window.location.replace(res.data.login);
+                } else {
+                    alert( res.message );
+                }
+            },
+            userIdentified: function(userId, backend) {
+                this.userId = userId;
+                this.backend = backend;
+            },
+            loadPreferences: function() {
+                return this.backend.get('preferences/' + this.profileId)
+                    .then((preferences) => {
+                        this.trailName = preferences.data.trailName;
+                        this.realName = preferences.data.realName;
+
+                        if (this.realName && this.realName.length > 0) this.displayName = this.realName;
+                        if (this.trailName && this.trailName.length > 0) this.displayName = this.trailName;
+                    })
+                    .catch(this.errorHandler);
+            },
+            loadTimeline: function() {
+                return this.backend.get('timeline/' + this.profileId)
+                    .then((timeline) => {
+                        this.timeline = timeline.data.map((item) => {
+                            item.date = this.formatDate(item.date);
+                            return item;
+                        });
+                        this.lastDate = this.timeline[0].date;
+                        this.lastLocation = this.timeline[0].poiName;
+                    })
+                    .catch(this.errorHandler);
+            },
+            initPage: function() {
+                this.loadPreferences();
+                this.loadTimeline();
+            },
+            formatDate: function(jsonDate) {
+                var month = '' + jsonDate.month,
+                    day = '' + jsonDate.day,
+                    year = jsonDate.year;
+
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+
+                return [year, month, day].join('-');
+            },
+            displayDate: function(stringDate) {
+                var date = new Date(stringDate)
+                var today = new Date();
+                var yesterday = new Date();
+                yesterday.setDate(today.getDate() - 1);
+
+                if (date.toDateString() === today.toDateString()) return 'today';
+                if (date.toDateString() === yesterday.toDateString()) return 'yesterday';
+
+                return 'on ' + date.toLocaleDateString('en-US', {
+                    month: 'long', day: 'numeric'
+                });
+            },
+            copyToClipboard: function () {
+                var textArea = document.createElement("textarea");
+                textArea.value = '${env.HEROKU_URL}' + this.$route.fullPath;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+        },
+        created: function() {
+            this.profileId = this.$route.params.id;
+
+            this.initPage();
+        }
+    });
+
+})();
+    </script>
+</body>
+</html>

@@ -23,10 +23,6 @@ body {
     padding-bottom: 1rem;
     border-bottom: .05rem solid #e5e5e5;
 }
-
-#preferences {
-    margin-top: 1rem;
-}
     </style>
 </head>
 <body>
@@ -169,7 +165,7 @@ body {
                 if (date.toDateString() === today.toDateString()) return 'today';
                 if (date.toDateString() === yesterday.toDateString()) return 'yesterday';
 
-                return 'at ' + date.toLocaleDateString('en-US', {
+                return 'on ' + date.toLocaleDateString('en-US', {
                     month: 'long', day: 'numeric'
                 });
             },

@@ -19,4 +19,6 @@ public class Path {
 
     public static final String PARAM_ID = ":id";
     public static final String PARAM_LAST = ":last";
+
+    public static final String PUBLIC = "/public";
 }

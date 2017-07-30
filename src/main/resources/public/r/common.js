@@ -129,13 +129,14 @@ Vue.component('nav-bar', {
             type: Number
         }
     },
-    data: function() {
-        return {
-            links: [
-                { name: 'Options', href: '/u/options.html', userLink: true },
-                { name: 'Manage', href: '/u/manage_trail.html' },
-                { name: 'About', href: '/p/about.html' },
-                { name: 'Contact', href: '/p/about.html#contact-us' }
+    computed: {
+        links: function() {
+            return  [
+                { name: 'Profile', href: '/p/profile/' + this.user },
+                { name: 'Options', href: '/u/options', userLink: true },
+                { name: 'Manage', href: '/u/manage' },
+                { name: 'About', href: '/p/about' },
+                { name: 'Contact', href: '/p/about#contact-us' }
             ]
         }
     }

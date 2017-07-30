@@ -18,7 +18,7 @@ public class QuotaService extends AbstractService {
 
     private final static ImmutableMap<AtRole, Integer> ROLE_TO_QUOTA = Maps.immutableEnumMap(ImmutableMap.of(
             AtRole.unconfirmed, 0,
-            AtRole.user, 1000,
+            AtRole.user, 500,
             AtRole.user_payed, 100_000
     ));
 

@@ -18,7 +18,9 @@ public class PreferenceService extends AbstractService {
                         AT_PREFERENCES.DIRECTION,
                         DSL.field("lower({0})", AT_PREFERENCES.START_END).as("start"),
                         DSL.field("upper({0})", AT_PREFERENCES.START_END).as("end"),
-                        AT_PREFERENCES.SHOW_WHOLE_TRAIL
+                        AT_PREFERENCES.SHOW_WHOLE_TRAIL,
+                        AT_PREFERENCES.TRAILNAME,
+                        AT_PREFERENCES.REALNAME
                 ).from(AT_PREFERENCES)
                 .where(AT_PREFERENCES.USER.eq(userId))
                 .fetchOneInto(Preferences.class);
@@ -33,6 +35,8 @@ public class PreferenceService extends AbstractService {
                 .set(AT_PREFERENCES.DIRECTION, preferences.direction)
                 .set(AT_PREFERENCES.START_END, (Object) DSL.field("daterange(?, ?)", Object.class, preferences.start, preferences.end))
                 .set(AT_PREFERENCES.SHOW_WHOLE_TRAIL, preferences.showFullTrail)
+                .set(AT_PREFERENCES.TRAILNAME, preferences.trailName)
+                .set(AT_PREFERENCES.REALNAME, preferences.realName)
                 .where(AT_PREFERENCES.USER.eq(userId))
                 .execute();
 
