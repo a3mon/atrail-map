@@ -25,11 +25,33 @@ body {
     border-bottom: .05rem solid #e5e5e5;
 }
 
-.share {
+.share, .search {
     position: relative;
+    height: 5rem;
+    margin-bottom: 0.25rem;
 }
 
-.share a, .share button {
+.search button {
+    position: relative;
+    z-index: 20;
+}
+
+#search-box {
+    position: absolute;
+    top: 5.25rem;
+}
+
+#search-box .card {
+    border-top-left-radius: 2.5rem;
+    border-top-right-radius: 2.5rem;
+    z-index: 10;
+}
+
+#search-box tbody tr {
+    cursor: pointer;
+}
+
+.share a, .share button, .search button {
     width: 5rem;
     height: 5rem;
     font-size: 2.5rem;
@@ -78,10 +100,29 @@ body {
             </nav-bar>
         </div>
 
-        <div class="row">
+        <div class="row" style="position: relative;">
             <div class="col-10">
                 <h1>This is the Profile of {{displayName}}<small v-if="realName && realName.length > 0 && realName !== displayName"> ({{realName}})</small></h1>
                 <p>{{displayName}} has last been at {{lastLocation}} <span :title="lastDate">{{displayDate(lastDate)}}</span>.</p>
+
+                <div class="card mb-1" style="position: relative;">
+                    <a :href="mapLink" target="_blank" class="btn btn-lg btn-secondary"
+                       style="position: absolute; top: 10px; right: 10px; " role="button">
+                        <i class="fa fa-arrows-alt" aria-hidden="true"></i> fullscreen
+                    </a>
+                    <iframe id="atrail-map"
+                            name="Appalachian Trail Map"
+                            title="Appalachian Trail Map"
+                            width="100%"
+                            height="300"
+                            frameborder="0"
+                            scrolling="no"
+                            marginheight="0"
+                            marginwidth="0"
+                            :src="mapLink">
+                    </iframe>
+                </div>
+
             </div>
             <div class="col-2">
                 <div class="share text-right">
@@ -114,26 +155,63 @@ body {
                         <i class="fa fa-share-alt" aria-hidden="true"></i>
                     </button>
                 </div>
+
+                <div class="search text-right">
+                    <button role="button" class="btn btn-primary" @click="showSearch = ! showSearch"
+                            :class="{ active: showShare }" title="Search">
+                        <i class="fa fa-search" aria-hidden="true"></i>
+                    </button>
+                </div>
             </div>
+            <transition  name="slide-fade">
+                <div id="search-box" class="col-12" v-if="showSearch">
+                    <div class="card">
+                        <div class="card-block">
+                            <h3 class="card-title">Search other Hikers</h3>
+
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                <tr>
+                                    <th style="width: 5%; ">#</th>
+                                    <th style="width: 55%; ">
+                                        <label class="sr-only" for="searchName">Name</label>
+                                        <input type="text" class="form-control" id="searchName" placeholder="Name"
+                                                v-model="searchCriteria.name" @keyup="filterSearch" @change="filterSearch">
+                                    </th>
+                                    <th style="width: 25%; ">
+                                        <label class="sr-only" for="searchDirection">Direction</label>
+                                        <select class="form-control" id="searchDirection"
+                                                v-model="searchCriteria.direction" @change="filterSearch">
+                                            <option>Direction</option>
+                                            <option>Nobo</option>
+                                            <option>Sobo</option>
+                                        </select>
+                                    </th>
+                                    <th style="width: 15%; ">
+                                        <label class="sr-only" for="searchYear">Year</label>
+                                        <input type="number" class="form-control" id="searchYear" placeholder="Year"
+                                                v-model="searchCriteria.year" @keyup="filterSearch" @change="filterSearch">
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr v-for="hiker in searchResult" @click="showProfile(hiker.id)">
+                                    <th>{{hiker.id}}</th>
+                                    <td>{{getDisplayName(hiker.trailName, hiker.realName)}}<small v-if="hiker.realName && hiker.realName.length > 0 && hiker.realName !== getDisplayName(hiker.trailName, hiker.realName)"> ({{realName}})</small></td>
+                                    <td>{{hiker.direction}}</td>
+                                    <td>{{hiker.year}}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer text-muted text-center">
+                            Found {{searchResult.length}} Hikers matching your search.
+                        </div>
+                    </div>
+                </div>
+            </transition>
         </div>
 
-        <div class="card mb-1" style="position: relative;">
-            <a :href="mapLink" target="_blank" class="btn btn-lg btn-secondary"
-               style="position: absolute; top: 10px; right: 10px; " role="button">
-                <i class="fa fa-arrows-alt" aria-hidden="true"></i> fullscreen
-            </a>
-            <iframe id="atrail-map"
-                    name="Appalachian Trail Map"
-                    title="Appalachian Trail Map"
-                    width="100%"
-                    height="300"
-                    frameborder="0"
-                    scrolling="no"
-                    marginheight="0"
-                    marginwidth="0"
-                    :src="mapLink">
-            </iframe>
-        </div>
 
         <div class="card mb-1" v-for="(item, index) in timeline">
             <div class="card-block">
@@ -163,7 +241,16 @@ body {
             timeline: [],
 
             showShare: false,
-            displayName: 'anonymous',
+            displayName: '',
+
+            showSearch: false,
+            searchCriteria: {
+                name: '',
+                direction: 'Direction',
+                year: ''
+            },
+            searchResult: [],
+            hikerList: [],
 
             profileId: 0,
             trailName: '',
@@ -191,9 +278,7 @@ body {
                     .then((preferences) => {
                         this.trailName = preferences.data.trailName;
                         this.realName = preferences.data.realName;
-
-                        if (this.realName && this.realName.length > 0) this.displayName = this.realName;
-                        if (this.trailName && this.trailName.length > 0) this.displayName = this.trailName;
+                        this.displayName = this.getDisplayName(this.trailName, this.realName);
                     })
                     .catch(this.errorHandler);
             },
@@ -209,9 +294,57 @@ body {
                     })
                     .catch(this.errorHandler);
             },
+            loadHikers: function() {
+                return this.backend.get('hiker/')
+                    .then((hiker) => {
+                        this.hikerList = hiker.data;
+                        this.searchResult = this.hikerList;
+                    })
+                    .catch(this.errorHandler);
+            },
             initPage: function() {
+                this.profileId = this.$route.params.id;
+                this.showSearch = false;
+
                 this.loadPreferences();
                 this.loadTimeline();
+                this.loadHikers();
+            },
+            getDisplayName: function (trailName, realName) {
+                if (trailName && trailName.length > 0) return trailName;
+                if (realName && realName.length > 0) return realName;
+                return 'anonymous';
+            },
+            filterSearch: function() {
+                var name = this.searchCriteria.name.toLowerCase();
+                var direction = this.searchCriteria.direction.toLowerCase();
+                var year = this.searchCriteria.year;
+
+                this.searchResult = this.hikerList.filter(
+                    hiker => {
+                        var result = true;
+
+                        if (name.length > 0) {
+                            result = result & ( hiker.trailName.toLowerCase().includes(name)
+                                              | hiker.realName.toLowerCase().includes(name)
+                            );
+                        }
+
+                        if (direction !== 'direction') {
+                            result = result & hiker.direction.toLowerCase() === direction;
+                        }
+
+                        if (year.length > 0) {
+                            result = result & hiker.year.toString().startsWith(year);
+                        }
+
+                        return result;
+                    }
+                )
+            },
+            showProfile: function (id) {
+                console.log(id);
+                this.$router.push('/p/profile/' + id, this.initPage);
             },
             formatDate: function(jsonDate) {
                 var month = '' + jsonDate.month,
@@ -246,8 +379,6 @@ body {
             }
         },
         created: function() {
-            this.profileId = this.$route.params.id;
-
             this.initPage();
         }
     });

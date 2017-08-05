@@ -24,6 +24,7 @@ public class Main {
     private final PreferenceService preferenceService = new PreferenceService();
     private final TimelineService timelineService = new TimelineService();
     private final QuotaService quotaService = new QuotaService();
+    private final HikerService hikerService = new HikerService();
 
     public static void main(String[] args)  {
         new Main().init();
@@ -63,6 +64,8 @@ public class Main {
         get(TIMELINE + PARAM_ID, timelineService::getTimeline, gson::toJson);
         post(TIMELINE + PARAM_ID, timelineService::addTimelineMoment);
         delete(TIMELINE + PARAM_ID + "/" + PARAM_LAST, timelineService::deleteLastTimelineMoment);
+
+        get(HIKER, hikerService::getHikers, gson::toJson);
 
         get(QUOTA + PARAM_ID, quotaService::getQuota, gson::toJson);
 

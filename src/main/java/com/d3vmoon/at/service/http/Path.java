@@ -11,6 +11,7 @@ public class Path {
     public static final String PREFERENCES = API_BASE + "preferences/";
     public static final String QUOTA = API_BASE + "quota/";
     public static final String TIMELINE = API_BASE + "timeline/";
+    public static final String HIKER = API_BASE + "hiker/";
 
     public static final String SESSIONS = API_BASE + "sessions/";
     public static final String USERS = API_BASE + "users/";
