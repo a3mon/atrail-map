@@ -1,1 +1,10 @@
 language: java
+
+services:
+  - postgresql
+
+addons:
+  postgresql: "9.5"
+
+env:
+  - JDBC_DATABASE_URL=jdbc:postgresql://localhost:5432/postgres?user=postgres
