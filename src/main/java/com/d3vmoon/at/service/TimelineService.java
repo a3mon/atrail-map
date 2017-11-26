@@ -3,9 +3,12 @@ package com.d3vmoon.at.service;
 import com.d3vmoon.at.service.pojo.TimelineDate;
 import spark.Request;
 import spark.Response;
+import spark.Spark;
 
+import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static com.d3vmoon.at.db.Tables.AT_POI;
 import static com.d3vmoon.at.db.tables.AtTimeline.AT_TIMELINE;
@@ -31,16 +34,15 @@ public class TimelineService extends AbstractService {
         final int userId = getUserId(req);
         final TimelineDate timelineDate = gson.fromJson(req.body(), TimelineDate.class);
 
-        final LocalDate latestDate = ctx.selectFrom(AT_TIMELINE)
+        final Optional<LocalDate> latestDate = ctx.selectFrom(AT_TIMELINE)
                 .where(AT_TIMELINE.AT_USER.eq(userId))
                 .orderBy(AT_TIMELINE.DATE.desc())
                 .limit(1)
-                .fetchOne(AT_TIMELINE.DATE)
-                .toLocalDate();
+                .fetchOptional(AT_TIMELINE.DATE)
+                .map(Date::toLocalDate);
 
-        if (latestDate != null && timelineDate.date.isBefore(latestDate)) {
-            resp.status(SC_CONFLICT);
-            return "";
+        if (latestDate.isPresent() && timelineDate.date.isBefore(latestDate.get())) {
+            return halt(SC_CONFLICT);
         }
 
         ctx.insertInto(AT_TIMELINE, AT_TIMELINE.AT_USER, AT_TIMELINE.AT_POI, AT_TIMELINE.COMMENT, AT_TIMELINE.DATE)

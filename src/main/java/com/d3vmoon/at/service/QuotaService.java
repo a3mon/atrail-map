@@ -22,13 +22,17 @@ public class QuotaService extends AbstractService {
             AtRole.user_payed, 100_000
     ));
 
-    private SecurityService securityService = new SecurityService();
+    private SecurityService securityService = new SecurityService(InitUser::init);
 
     public Quota getQuota(Request req, Response resp) {
         final int userId = getIdFromPath(req);
-        final AtRole userRole = securityService.getRole(userId);
+        final Optional<AtRole> userRole = securityService.getRole(userId);
 
-        return getQuota(userId, userRole);
+        if ( ! userRole.isPresent() ) {
+            return null;
+        }
+
+        return getQuota(userId, userRole.get());
     }
 
     private Quota getQuota(int userId, AtRole userRole) {

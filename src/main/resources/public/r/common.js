@@ -41,6 +41,14 @@ Vue.component('login-button', {
                 } else {
                     window.location.reload();
                 }
+            })
+            .catch(err => {
+                if (err.response.status === 401) {
+                    console.log(err.response.data.message);
+                    window.location.replace(err.response.data.login);
+                } else {
+                    console.log(err.response);
+                }
             });
         }
     },

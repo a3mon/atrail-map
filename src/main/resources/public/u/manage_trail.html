@@ -96,11 +96,15 @@ body {
             reloadMap: function () {
                 document.getElementById('atrail-map').contentWindow.location.reload();
             },
-            errorHandler: function (res) {
-                if ( res.status === 401 ) {
-                    window.location.replace(res.data.login);
+            errorHandler: function (err) {
+                var response = err.response;
+                if ( response.status === 401 ) {
+                    window.location.replace(response.data.login);
+                } else if (response.status === 404 ) {
+                    console.log(response.data.message)
                 } else {
-                    alert( res.message );
+                    console.log(response);
+                    alert( response.data.message );
                 }
             },
             userIdentified: function(userId, backend) {

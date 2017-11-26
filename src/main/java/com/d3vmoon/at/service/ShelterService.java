@@ -2,6 +2,7 @@ package com.d3vmoon.at.service;
 
 import com.d3vmoon.at.db.tables.records.AtPoiRecord;
 import com.d3vmoon.at.service.pojo.Shelter;
+import com.d3vmoon.at.service.pojo.errors.Errors;
 import org.jooq.RecordMapper;
 import org.jooq.impl.DSL;
 import org.postgresql.geometric.PGpoint;
@@ -21,6 +22,7 @@ import static com.d3vmoon.at.service.SecurityService.getUserId;
 import static com.d3vmoon.at.service.http.Path.PARAM_ID;
 import static javax.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
+import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 
 public class ShelterService extends AbstractService {
 
@@ -44,14 +46,19 @@ public class ShelterService extends AbstractService {
         final String idParam = req.params(PARAM_ID);
         if ("last".equalsIgnoreCase(idParam)) {
             final int userId = Integer.parseInt(req.queryParams(PARAM_USER_ID));
-            return ctx
+            final List<Shelter> shelters = ctx
                     .selectFrom(AT_POI)
                     .where(AT_POI.ID.eq(ctx
-                            .select(AT_LAST_POI.AT_POI)
-                            .from(AT_LAST_POI)
-                            .where(AT_LAST_POI.AT_USER.eq(userId)))
+                                              .select(AT_LAST_POI.AT_POI)
+                                              .from(AT_LAST_POI)
+                                              .where(AT_LAST_POI.AT_USER.eq(userId)))
                     ).fetch()
-                    .map(RECORD_MAPPER).get(0);
+                    .map(RECORD_MAPPER);
+            if (shelters.isEmpty()) {
+                return halt(Errors.NOT_FOUND_RESPONSE);
+            } else {
+                return shelters.get(0);
+            }
         } else {
             final Integer id = getIdFromPath(req);
             return ctx

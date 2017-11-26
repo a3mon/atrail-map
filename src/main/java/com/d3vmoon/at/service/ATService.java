@@ -1,8 +1,10 @@
 package com.d3vmoon.at.service;
 
 import com.d3vmoon.at.db.enums.AtRole;
+import com.d3vmoon.at.service.pojo.Coordinate;
 import com.d3vmoon.at.service.pojo.Preferences;
 import com.d3vmoon.at.service.pojo.Quota;
+import com.d3vmoon.at.service.pojo.errors.Errors;
 import com.google.common.collect.ImmutableMap;
 import org.jooq.*;
 import org.postgresql.geometric.PGpoint;
@@ -10,10 +12,9 @@ import spark.Request;
 import spark.Response;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 import static com.d3vmoon.at.db.Tables.*;
-import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
 import static org.jooq.impl.DSL.*;
 
 public class ATService extends AbstractService {
@@ -23,11 +24,11 @@ public class ATService extends AbstractService {
     private final Table<Record> trail = table("unnest(points) as point");
     private final Field<Object> point = field("point");
 
-    private final SecurityService securityService = new SecurityService();
+    private final SecurityService securityService = new SecurityService(InitUser::init);
     private final PreferenceService preferenceService = new PreferenceService();
     private final QuotaService quotaService = new QuotaService();
 
-    public List<Map<String, Double>> getFullTrail(Request req, Response resp) {
+    public List<Coordinate> getFullTrail(Request req, Response resp) {
         return ctx.select(point)
         .from(
                select(
@@ -39,23 +40,23 @@ public class ATService extends AbstractService {
                .orderBy(index.asc())
         )
         .fetch()
-        .map(r -> {
-           PGpoint p = r.get(point, PGpoint.class);
-           return ImmutableMap.of("lat", p.x, "lng", p.y);
-        });
+        .map(r -> Coordinate.of(r.get(point, PGpoint.class)));
     }
 
     public Object getUserTrail(Request req, Response resp) {
         final int userId = getIdFromPath(req);
-        final AtRole userRole = securityService.getRole(userId);
+        final Optional<AtRole> userRole = securityService.getRole(userId);
 
-        final Quota.ConsumedQuota quota = quotaService.consumeQuota(userId, userRole);
-        if (quota.previousQuota <= 0 ) {
-            resp.status(SC_FORBIDDEN);
-            return null;
+        if ( ! userRole.isPresent() ) {
+            return halt(Errors.NOT_FOUND_RESPONSE);
         }
 
-        final List<Map<String, Double>> fullTrail = getFullTrail(req, resp);
+        final Quota.ConsumedQuota quota = quotaService.consumeQuota(userId, userRole.get());
+        if (quota.previousQuota <= 0 ) {
+            return halt(Errors.NO_QUOTA_RESPNSE);
+        }
+
+        final List<Coordinate> fullTrail = getFullTrail(req, resp);
         final Preferences preferences = preferenceService.getPreferences(req, resp);
         final int currentIndex = ctx.select(
                 indexDef

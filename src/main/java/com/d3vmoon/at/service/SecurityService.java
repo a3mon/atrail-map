@@ -4,15 +4,18 @@ import com.d3vmoon.at.db.enums.AtAuthenticationType;
 import com.d3vmoon.at.db.enums.AtRole;
 import com.d3vmoon.at.service.pojo.Confirmation;
 import com.d3vmoon.at.service.pojo.Credentials;
+import com.d3vmoon.at.service.pojo.errors.Errors;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.common.collect.ImmutableMap;
 import com.sendgrid.*;
+import org.jooq.Configuration;
 import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Record4;
+import org.jooq.impl.DSL;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,10 +41,14 @@ public class SecurityService extends AbstractService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SecurityService.class);
 
-    public static int getUserId(Request req) {
-        return req.attribute(PARAM_USER_ID);
-    }
+    public static int getUserId(Request req) { return req.attribute(PARAM_USER_ID); }
     public static AtRole getUserRole(Request req) { return req.attribute(PARAM_USER_ROLE); }
+
+    private final UserInitScript userInitScript;
+
+    public SecurityService(UserInitScript userInitScritp) {
+        this.userInitScript = userInitScritp;
+    }
 
     public void authenticate(Request req, Response resp) {
         if ( "GET".equals(req.requestMethod())
@@ -55,7 +62,7 @@ public class SecurityService extends AbstractService {
         final Optional<String> authorization = Optional.ofNullable(req.headers("Authorization"));
 
         if ( ! authorization.isPresent() ) {
-            Spark.halt(401, gson.toJson(new UnauthorizedResponse()));
+            halt(new Errors.UnauthorizedResponse("Missing Header: Authorization"));
             return;
         }
 
@@ -64,7 +71,7 @@ public class SecurityService extends AbstractService {
             token = UUID.fromString(authorization.get());
         } catch (IllegalArgumentException e) {
             LOGGER.debug("Invalid UUID", e);
-            Spark.halt(401, gson.toJson(new UnauthorizedResponse()));
+            halt(new Errors.UnauthorizedResponse("The provided Authorization header was invalid"));
             return;
         }
 
@@ -74,7 +81,7 @@ public class SecurityService extends AbstractService {
                 .fetchOptional();
 
         if ( ! userId.isPresent() ) {
-            Spark.halt(401, gson.toJson(new UnauthorizedResponse()));
+            halt(new Errors.UnauthorizedResponse("No active session. Please login again."));
             return;
         }
 
@@ -93,8 +100,7 @@ public class SecurityService extends AbstractService {
                     .fetchOptional();
 
             if (!record.isPresent()) {
-                resp.status(401);
-                return new CouldNotAuthenticateResponse();
+                return halt(Errors.COULD_NOT_AUTHENTICATE_RESPONSE);
             }
 
             final boolean isAuthenticated = BCrypt.checkpw(
@@ -103,8 +109,7 @@ public class SecurityService extends AbstractService {
             );
 
             if (!isAuthenticated) {
-                resp.status(401);
-                return new CouldNotAuthenticateResponse();
+                return halt(Errors.COULD_NOT_AUTHENTICATE_RESPONSE);
             }
             userId = record.get().get(AT_USER.ID);
         } else if (credentials.isGoogleRequst()) {
@@ -115,8 +120,7 @@ public class SecurityService extends AbstractService {
                 ).verify(credentials.googleToken);
 
                 if (token == null) {
-                    resp.status(401);
-                    return new CouldNotAuthenticateResponse();
+                    return halt(Errors.COULD_NOT_AUTHENTICATE_RESPONSE);
                 }
 
                 final Optional<Record1<Integer>> record = ctx.select(AT_USER.ID)
@@ -124,23 +128,29 @@ public class SecurityService extends AbstractService {
                         .where(lower(AT_USER.EMAIL).eq(lower(token.getPayload().getEmail())))
                         .fetchOptional();
 
-                if (!record.isPresent()) {
-                    userId = ctx.insertInto(AT_USER).columns(AT_USER.EMAIL, AT_USER.PASSWORD, AT_USER.ROLE, AT_USER.AUTHENTICATION_TYPE)
-                            .values(token.getPayload().getEmail(), credentials.googleToken, AtRole.user, AtAuthenticationType.google)
-                            .returning(AT_USER.ID)
-                            .fetchOne()
-                            .get(AT_USER.ID);
+                if ( ! record.isPresent() ) {
+                    userId = ctx.transactionResult(config -> {
+                        int result = DSL.using(config).insertInto(AT_USER).columns(AT_USER.EMAIL, AT_USER.PASSWORD, AT_USER.ROLE, AT_USER.AUTHENTICATION_TYPE)
+                                         .values(token.getPayload().getEmail(), credentials.googleToken, AtRole.user, AtAuthenticationType.google)
+                                         .returning(AT_USER.ID)
+                                         .fetchOne()
+                                         .get(AT_USER.ID);
+
+                        userInitScript.initUser(config, result);
+
+                        return result;
+                    });
+
+
                 } else {
                     userId = record.get().get(AT_USER.ID);
                 }
             } catch (GeneralSecurityException | IOException e) {
                 LOGGER.error(e.getMessage(), e);
-                resp.status(401);
-                return new CouldNotAuthenticateResponse();
+                return halt(Errors.COULD_NOT_AUTHENTICATE_RESPONSE);
             }
         } else {
-            resp.status(401);
-            return new CouldNotAuthenticateResponse();
+            return halt(Errors.COULD_NOT_AUTHENTICATE_RESPONSE);
         }
 
         final UUID token = UUID.randomUUID();
@@ -188,8 +198,13 @@ public class SecurityService extends AbstractService {
         return "";
     }
 
-    public AtRole getRole(int userId) {
-        return ctx.select(AT_USER.ROLE).from(AT_USER).where(AT_USER.ID.eq(userId)).fetchOne(AT_USER.ROLE);
+    /**
+     * Fetches the role of a given user. Empty result if there is no user with the given id.
+     * @param userId the id of the user
+     * @return the role of the user, or empty if there is no such user
+     */
+    public Optional<AtRole> getRole(int userId) {
+        return ctx.select(AT_USER.ROLE).from(AT_USER).where(AT_USER.ID.eq(userId)).fetchOptional(AT_USER.ROLE);
     }
 
     public Object signup(Request req, Response resp) {
@@ -200,19 +215,25 @@ public class SecurityService extends AbstractService {
                 .from(AT_USER)
                 .where(lower(AT_USER.EMAIL).eq(lower(credentials.email)))
         ) ) {
-            resp.status(409);
-            return new EmailAddressAlreadyRegisterdResponse();
+            return halt(Errors.EMAIL_ADDRESS_ALREADY_REGISTERED_RESPONSE);
         }
 
         final String hash = BCrypt.hashpw(credentials.password, BCrypt.gensalt());
 
-        Integer userId = ctx.insertInto(AT_USER, AT_USER.EMAIL, AT_USER.PASSWORD)
-                .values(credentials.email, hash)
-                .returning(AT_USER.ID)
-                .fetchOne()
-                .get(AT_USER.ID);
+        final Integer userId = ctx.transactionResult(config -> {
+            final int result = DSL.using(config).insertInto(AT_USER, AT_USER.EMAIL, AT_USER.PASSWORD)
+                    .values(credentials.email, hash)
+                    .returning(AT_USER.ID)
+                    .fetchOne()
+                    .get(AT_USER.ID);
 
-                final UUID token = UUID.randomUUID();
+            userInitScript.initUser(config, result);
+
+            return result;
+        });
+
+
+        final UUID token = UUID.randomUUID();
 
         if ( sendConfirmationEmail(credentials.email, token) ) {
             ctx.insertInto(AT_CONFIRMATION, AT_CONFIRMATION.AT_USER, AT_CONFIRMATION.TOKEN)
@@ -230,7 +251,7 @@ public class SecurityService extends AbstractService {
     public Object confirm(Request req, Response resp) {
         final Confirmation confirmation = gson.fromJson(req.body(), Confirmation.class);
 
-        Optional<Record4<Integer, String, Integer, UUID>> result = ctx.select(AT_USER.ID, AT_USER.EMAIL, AT_CONFIRMATION.ID, AT_CONFIRMATION.TOKEN)
+        final Optional<Record4<Integer, String, Integer, UUID>> result = ctx.select(AT_USER.ID, AT_USER.EMAIL, AT_CONFIRMATION.ID, AT_CONFIRMATION.TOKEN)
                 .from(AT_USER).join(AT_CONFIRMATION).on(AT_USER.ID.eq(AT_CONFIRMATION.AT_USER))
                 .where(lower(AT_USER.EMAIL).eq(lower(confirmation.email)))
                 .and(AT_CONFIRMATION.TOKEN.eq(UUID.fromString(confirmation.token)))
@@ -246,6 +267,7 @@ public class SecurityService extends AbstractService {
                     .where(AT_CONFIRMATION.ID.eq(result.get().field(AT_CONFIRMATION.ID)))
                     .execute();
 
+            Spark.halt();
             resp.status(204);
         } else {
             resp.status(400);
@@ -284,15 +306,10 @@ public class SecurityService extends AbstractService {
         }
     }
 
-    private static class UnauthorizedResponse {
-        final String login = HEROKU_URL + "/p/login.html";
-    }
+    @FunctionalInterface
+    public interface UserInitScript {
 
-    private static class CouldNotAuthenticateResponse extends UnauthorizedResponse {
-        final String message = "Could not authenticate.";
-    }
+        void initUser(Configuration config, int userId);
 
-    private static class EmailAddressAlreadyRegisterdResponse {
-        final String message = "This email is already registered.";
     }
 }

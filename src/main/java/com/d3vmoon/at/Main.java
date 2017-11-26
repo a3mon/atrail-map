@@ -20,7 +20,7 @@ public class Main {
 
     private final ATService atService = new ATService();
     private final ShelterService shelterService = new ShelterService();
-    private final SecurityService securityService = new SecurityService();
+    private final SecurityService securityService = new SecurityService(InitUser::init);
     private final PreferenceService preferenceService = new PreferenceService();
     private final TimelineService timelineService = new TimelineService();
     private final QuotaService quotaService = new QuotaService();
